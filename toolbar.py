@@ -12,7 +12,7 @@ class Toolbar:
         self.delete_var = StringVar(self.root, f"del: {self.data.is_deleting}")
         self.select_var = StringVar(self.root, f"sel: {self.data.is_selecting}")
 
-        toolbar_frame = Frame(self.root, background="red", height=75)
+        toolbar_frame = Frame(self.root, height=75)
 
         self.color_button(toolbar_frame, 0)
         self.delete_button(toolbar_frame, 1)
