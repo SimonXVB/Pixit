@@ -1,14 +1,10 @@
 from tkinter import * # type: ignore
-from data import Data
+import data
 
 class MainCanvas:
-    def __init__(self, root: Tk, data: Data) -> None:
+    def __init__(self, root: Tk, data: "data.Data") -> None:
         self.root = root
         self.data = data
 
-        canvas = Canvas(self.root, bg=self.data.bg)
-        canvas.grid(sticky="NESW", row=1, column=0)
-
-        self.data.canvas = canvas
-        
-
+        self.canvas = Canvas(self.root, bg=self.data.bg)
+        self.canvas.grid(sticky="NESW", row=1, column=0)

@@ -1,14 +1,15 @@
 from tkinter import * # type: ignore
-from data import Data
+import data
 
 class Toolbar:
-    def __init__(self, root: Tk, data: Data) -> None:
+    def __init__(self, root: Tk, data: "data.Data") -> None:
         self.root = root
         self.data = data
 
         toolbar_frame = Frame(self.root, bg="red", height=50)
         toolbar_frame.rowconfigure(0, weight=1)
         toolbar_frame.grid_propagate(False)
+        toolbar_frame.grid(sticky="NEWS", column=0, row=0)
 
         self.color_button(toolbar_frame, 0)
         self.bg_color_button(toolbar_frame, 1)
@@ -16,8 +17,6 @@ class Toolbar:
         self.select_button(toolbar_frame, 3)
         self.grid_button(toolbar_frame, 4)
         self.shape_dropdown(toolbar_frame, 5)
-
-        toolbar_frame.grid(sticky="NEWS", column=0, row=0)
 
 
     def color_button(self, parent: Frame, col: int):
