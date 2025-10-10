@@ -1,14 +1,10 @@
 from tkinter import * # type: ignore
-from tkinter import colorchooser
 from data import Data
 
 class Toolbar:
     def __init__(self, root: Tk, data: Data) -> None:
         self.root = root
         self.data = data
-
-        self.delete_var = StringVar(self.root, f"del: {self.data.is_deleting}")
-        self.select_var = StringVar(self.root, f"sel: {self.data.is_selecting}")
 
         toolbar_frame = Frame(self.root, bg="red", height=50)
         toolbar_frame.rowconfigure(0, weight=1)
@@ -26,11 +22,7 @@ class Toolbar:
 
     def color_button(self, parent: Frame, col: int):
         def set_color():
-            color: str | None = colorchooser.askcolor()[1]
-
-            if color != None:
-                self.data.color = color
-                button.configure(background=self.data.color)
+            self.data.set_color(button)
 
         button = Button(parent, text="col", fg="white", background=self.data.color, width=10, command=set_color)
         button.grid(sticky="NSW", column=col, row=0)
@@ -38,30 +30,31 @@ class Toolbar:
 
     def bg_color_button(self, parent: Frame, col: int):
         def set_bg_color():
-            color: str | None = colorchooser.askcolor()[1]
+            self.data.set_bg_color(button)
 
-            if color != None:
-                self.data.bg = color
-                button.configure(background=self.data.bg)
-
-        button = Button(parent, text="bg col", fg="white", background=self.data.color, width=10, command=set_bg_color)
+        button = Button(parent, text="bg col", fg="white", background=self.data.bg, width=10, command=set_bg_color)
         button.grid(sticky="NSW", column=col, row=0)
 
         
     def delete_button(self, parent: Frame, col: int):
-        button = Button(parent, background="green", width=10, textvariable=self.delete_var, command=lambda: self.set_interaction_state("delete"))
+        def set_interaction_state():
+            self.data.set_interaction_state("delete")
+
+        button = Button(parent, background="green", width=10, textvariable=self.data.delete_var, command=set_interaction_state)
         button.grid(sticky="NSW", column=col, row=0)
 
 
     def select_button(self, parent: Frame, col: int):
-        button = Button(parent, background="purple", fg="white", width=10, textvariable=self.select_var, command=lambda: self.set_interaction_state("select"))
+        def set_interaction_state():
+            self.data.set_interaction_state("select")
+
+        button = Button(parent, background="purple", fg="white", width=10, textvariable=self.data.select_var, command=set_interaction_state)
         button.grid(sticky="NSW", column=col, row=0)
 
 
     def grid_button(self, parent: Frame, col: int):
         def toggle_grid():
-            self.data.show_grid = not self.data.show_grid
-            button.configure(text=f"grid: {self.data.show_grid}")
+            self.data.toggle_grid(button)
 
         button = Button(parent, text=f"grid: {self.data.show_grid}", background="yellow", width=10, command=toggle_grid)
         button.grid(sticky="NSW", column=col, row=0)
@@ -71,20 +64,7 @@ class Toolbar:
         selected = StringVar(parent, self.data.shape)
 
         def set_shape(x: StringVar):
-            self.data.shape = str(x)
-            print(self.data.shape)
+            self.data.set_shape(x)
 
         dropdown = OptionMenu(parent, selected, *self.data.shape_options, command=set_shape)
         dropdown.grid(sticky="NSW", column=col, row=0)
-
-
-    def set_interaction_state(self, interaction: str):
-        if interaction == "delete":
-            self.data.is_deleting = not self.data.is_deleting
-            self.data.is_selecting = False
-        elif interaction == "select": 
-            self.data.is_selecting = not self.data.is_selecting
-            self.data.is_deleting = False
-
-        self.delete_var.set(f"del: {self.data.is_deleting}")
-        self.select_var.set(f"sel: {self.data.is_selecting}")

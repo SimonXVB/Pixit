@@ -6,6 +6,9 @@ class MainCanvas:
         self.root = root
         self.data = data
 
-        canvas = Canvas(self.root, bg="blue")
+        canvas = Canvas(self.root, bg=self.data.bg)
         canvas.grid(sticky="NESW", row=1, column=0)
+
+        self.data.canvas = canvas
+        
 
