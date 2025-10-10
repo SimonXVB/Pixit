@@ -7,5 +7,5 @@ class MainCanvas:
         self.data = data
 
         canvas = Canvas(self.root, bg="blue")
-        canvas.grid(row=1, column=0, sticky="NWES")
+        canvas.grid(sticky="NESW", row=1, column=0)
 
