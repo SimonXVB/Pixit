@@ -22,6 +22,7 @@ class Main(Tk):
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.shape: str = self.shape_options[0]
+        self.pixel_size = 50
         self.canvas_size: list[int] = [20, 15]
 
         self.toolbar = Toolbar(self)
@@ -51,7 +52,7 @@ class Main(Tk):
         self.show_grid = not self.show_grid
 
         button.configure(text=f"grid: {self.show_grid}")
-        self.main_canvas.draw_grid()
+        self.main_canvas.toggle_grid()
     
 
     def set_shape(self, x: StringVar):
