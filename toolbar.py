@@ -15,15 +15,15 @@ class Toolbar(ttk.Frame):
         self.grid_propagate(False)
         self.grid(sticky="NEWS", column=0, row=0)
 
-        self.color_btn = self.color_button(self, 0)
-        self.bg_color_btn = self.bg_color_button(self, 1)
-        self.delete_btn = self.delete_button(self, 2)
-        self.select_btn = self.select_button(self, 3)
-        self.grid_btn = self.grid_button(self, 4)
-        self.shape_dd = self.shape_dropdown(self, 5)
+        self.color_btn = self._create_color_button(self, 0)
+        self.bg_color_btn = self._create_bg_color_button(self, 1)
+        self.delete_btn = self._create_delete_button(self, 2)
+        self.select_btn = self._create_select_button(self, 3)
+        self.grid_btn = self._create_grid_button(self, 4)
+        self.shape_dd = self._create_shape_dropdown(self, 5)
 
 
-    def color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _create_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_color():
             self.root.set_color(button)
 
@@ -33,7 +33,7 @@ class Toolbar(ttk.Frame):
         return button
 
 
-    def bg_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _create_bg_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_bg_color():
             self.root.set_bg_color(button)
 
@@ -43,7 +43,7 @@ class Toolbar(ttk.Frame):
         return button
 
         
-    def delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _create_delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_interaction_state():
             self.root.set_interaction_state("delete")
 
@@ -53,7 +53,7 @@ class Toolbar(ttk.Frame):
         return button
 
 
-    def select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _create_select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_interaction_state():
             self.root.set_interaction_state("select")
 
@@ -63,7 +63,7 @@ class Toolbar(ttk.Frame):
         return button
 
 
-    def grid_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _create_grid_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def toggle_grid():
             self.root.toggle_grid(button)
 
@@ -73,7 +73,7 @@ class Toolbar(ttk.Frame):
         return button
 
 
-    def shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
+    def _create_shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
         selected = StringVar(parent, self.root.shape)
 
         def set_shape(x: StringVar):

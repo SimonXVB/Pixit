@@ -10,3 +10,8 @@ class MainCanvas(Canvas):
 
         self.canvas = super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
+
+        self.draw_grid()
+
+    def draw_grid(self):
+        pass

@@ -7,7 +7,7 @@ class Main(Tk):
     def __init__(self) -> None:
         super().__init__()
 
-        #window options
+        #window config
         self.title("Pixit")
         self.geometry("700x500")
         self.minsize(450, 450)
