@@ -1,10 +1,12 @@
 from tkinter import * # type: ignore
-import data
+from typing import TYPE_CHECKING # <--don't like this
 
-class MainCanvas:
-    def __init__(self, root: Tk, data: "data.Data") -> None:
+if TYPE_CHECKING:
+    from main import Main
+
+class MainCanvas(Canvas):
+    def __init__(self, root: "Main") -> None:
         self.root = root
-        self.data = data
 
-        self.canvas = Canvas(self.root, bg=self.data.bg)
-        self.canvas.grid(sticky="NESW", row=1, column=0)
+        self.canvas = super().__init__(self.root, bg=self.root.bg)
+        self.grid(sticky="NESW", row=1, column=0)

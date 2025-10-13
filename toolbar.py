@@ -1,69 +1,85 @@
 from tkinter import * # type: ignore
-import data
+from tkinter import ttk
+from typing import TYPE_CHECKING # <--don't like this
 
-class Toolbar:
-    def __init__(self, root: Tk, data: "data.Data") -> None:
+if TYPE_CHECKING:
+    from main import Main
+
+class Toolbar(ttk.Frame):
+    def __init__(self, root: "Main") -> None:
+        super().__init__(height=50)
+
         self.root = root
-        self.data = data
 
-        toolbar_frame = Frame(self.root, bg="red", height=50)
-        toolbar_frame.rowconfigure(0, weight=1)
-        toolbar_frame.grid_propagate(False)
-        toolbar_frame.grid(sticky="NEWS", column=0, row=0)
+        self.rowconfigure(0, weight=1)
+        self.grid_propagate(False)
+        self.grid(sticky="NEWS", column=0, row=0)
 
-        self.color_button(toolbar_frame, 0)
-        self.bg_color_button(toolbar_frame, 1)
-        self.delete_button(toolbar_frame, 2)
-        self.select_button(toolbar_frame, 3)
-        self.grid_button(toolbar_frame, 4)
-        self.shape_dropdown(toolbar_frame, 5)
+        self.color_btn = self.color_button(self, 0)
+        self.bg_color_btn = self.bg_color_button(self, 1)
+        self.delete_btn = self.delete_button(self, 2)
+        self.select_btn = self.select_button(self, 3)
+        self.grid_btn = self.grid_button(self, 4)
+        self.shape_dd = self.shape_dropdown(self, 5)
 
 
-    def color_button(self, parent: Frame, col: int):
+    def color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_color():
-            self.data.set_color(button)
+            self.root.set_color(button)
 
-        button = Button(parent, text="col", fg="white", background=self.data.color, width=10, command=set_color)
+        button = ttk.Button(parent, text="col", width=10, command=set_color)
         button.grid(sticky="NSW", column=col, row=0)
 
+        return button
 
-    def bg_color_button(self, parent: Frame, col: int):
+
+    def bg_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_bg_color():
-            self.data.set_bg_color(button)
+            self.root.set_bg_color(button)
 
-        button = Button(parent, text="bg col", fg="white", background=self.data.bg, width=10, command=set_bg_color)
+        button = ttk.Button(parent, text="bg col", width=10, command=set_bg_color)
         button.grid(sticky="NSW", column=col, row=0)
+
+        return button
 
         
-    def delete_button(self, parent: Frame, col: int):
+    def delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_interaction_state():
-            self.data.set_interaction_state("delete")
+            self.root.set_interaction_state("delete")
 
-        button = Button(parent, background="green", width=10, textvariable=self.data.delete_var, command=set_interaction_state)
+        button = ttk.Button(parent, text=str(self.root.is_deleting), width=10, command=set_interaction_state)
         button.grid(sticky="NSW", column=col, row=0)
 
+        return button
 
-    def select_button(self, parent: Frame, col: int):
+
+    def select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_interaction_state():
-            self.data.set_interaction_state("select")
+            self.root.set_interaction_state("select")
 
-        button = Button(parent, background="purple", fg="white", width=10, textvariable=self.data.select_var, command=set_interaction_state)
+        button = ttk.Button(parent, text=str(self.root.is_selecting), width=10, command=set_interaction_state)
         button.grid(sticky="NSW", column=col, row=0)
 
+        return button
 
-    def grid_button(self, parent: Frame, col: int):
+
+    def grid_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def toggle_grid():
-            self.data.toggle_grid(button)
+            self.root.toggle_grid(button)
 
-        button = Button(parent, text=f"grid: {self.data.show_grid}", background="yellow", width=10, command=toggle_grid)
+        button = ttk.Button(parent, text=f"grid: {self.root.show_grid}", width=10, command=toggle_grid)
         button.grid(sticky="NSW", column=col, row=0)
 
+        return button
 
-    def shape_dropdown(self, parent: Frame, col: int):
-        selected = StringVar(parent, self.data.shape)
+
+    def shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
+        selected = StringVar(parent, self.root.shape)
 
         def set_shape(x: StringVar):
-            self.data.set_shape(x)
+            self.root.set_shape(x)
 
-        dropdown = OptionMenu(parent, selected, *self.data.shape_options, command=set_shape)
+        dropdown = ttk.OptionMenu(parent, selected, *self.root.shape_options, command=set_shape)
         dropdown.grid(sticky="NSW", column=col, row=0)
+
+        return dropdown
