@@ -111,8 +111,11 @@ class Toolbar(ttk.Frame):
         coord_y_label = ttk.Label(dim_frame, text="Y:")
         coord_y_label.grid(row=2, column=0)
 
-        coord_x_input = IntInput(dim_frame, str(self.root.canvas_size[0]), row=1, col=1)
-        coord_y_input = IntInput(dim_frame, str(self.root.canvas_size[1]), row=2, col=1)
+        coord_x_input = IntInput(dim_frame, str(self.root.canvas_size[0]))
+        coord_x_input.grid(row=1, column=1)
+
+        coord_y_input = IntInput(dim_frame, str(self.root.canvas_size[1]))
+        coord_y_input.grid(row=2, column=1)
 
         #place pixel size widgets
         size_frame = ttk.Frame(toplevel)
@@ -121,7 +124,8 @@ class Toolbar(ttk.Frame):
         size_label = ttk.Label(size_frame, text="Pixel Size")
         size_label.grid(row=0, column=0)
 
-        size_input = IntInput(size_frame, str(self.root.canvas_size[0]), row=1, col=0)
+        size_input = IntInput(size_frame, str(self.root.canvas_size[0]))
+        size_input.grid(row=1, column=0)
 
         pixel_label = ttk.Label(size_frame, text="px")
         pixel_label.grid(row=1, column=1)
