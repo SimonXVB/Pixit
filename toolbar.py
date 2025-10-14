@@ -1,7 +1,7 @@
 from tkinter import * # type: ignore
 from tkinter import ttk
+from components.int_input import IntInput
 from typing import TYPE_CHECKING # <--don't like this
-from int_input import IntInput
 
 if TYPE_CHECKING:
     from main import Main
