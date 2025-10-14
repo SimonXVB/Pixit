@@ -12,8 +12,8 @@ class MainCanvas(Canvas):
         super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
         
-        self.bind("<Button-1>", self.draw_pixel)
-        self.bind("<B1-Motion>", self.draw_pixel)
+        self.bind("<Button-1>", self.drawing_state)
+        self.bind("<B1-Motion>", self.drawing_state)
 
         self.bind("<Button-3>", self.delete_pixel)
         self.bind("<B3-Motion>", self.delete_pixel)
@@ -22,6 +22,8 @@ class MainCanvas(Canvas):
 
     def init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
+
+        self.delete("grid_el")
 
         for y in range(self.root.canvas_size[1]):
             for x in range(self.root.canvas_size[0]):
@@ -66,3 +68,11 @@ class MainCanvas(Canvas):
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
         self.delete(f"{GRID_X}-{GRID_Y}")
+
+    def drawing_state(self, event: Event):
+        if self.root.is_selecting:
+            pass
+        elif self.root.is_deleting:
+            self.delete_pixel(event)
+        else:
+            self.draw_pixel(event)

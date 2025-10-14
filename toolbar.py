@@ -1,6 +1,7 @@
 from tkinter import * # type: ignore
 from tkinter import ttk
 from typing import TYPE_CHECKING # <--don't like this
+from int_input import IntInput
 
 if TYPE_CHECKING:
     from main import Main
@@ -20,7 +21,8 @@ class Toolbar(ttk.Frame):
         self.delete_btn = self._create_delete_button(self, 2)
         self.select_btn = self._create_select_button(self, 3)
         self.grid_btn = self._create_grid_button(self, 4)
-        self.shape_dd = self._create_shape_dropdown(self, 5)
+        self.dimensions_btn = self._create_change_dimensions_button(self, 5)
+        self.shape_dd = self._create_shape_dropdown(self, 6)
 
 
     def _create_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
@@ -83,3 +85,49 @@ class Toolbar(ttk.Frame):
         dropdown.grid(sticky="NSW", column=col, row=0)
 
         return dropdown
+    
+    def _create_change_dimensions_button(self, parent: "Toolbar", col: int):
+        button = ttk.Button(parent, text="dimen", width=10, command=self._change_dimensions_toplevel)
+        button.grid(sticky="NSW", column=col, row=0)
+
+        return button
+    
+    def _change_dimensions_toplevel(self):
+        toplevel = Toplevel(self.root, padx=10, pady=10)
+        toplevel.title("Set Dimensions")
+        toplevel.resizable(False, False)
+        toplevel.grab_set()
+
+        #place dimensions widgets
+        dim_frame = ttk.Frame(toplevel)
+        dim_frame.grid(row=0, column=0)
+
+        dim_label = ttk.Label(dim_frame, text="Dimensions")
+        dim_label.grid(row=0, column=0)
+
+        coord_x_label = ttk.Label(dim_frame, text="X:")
+        coord_x_label.grid(row=1, column=0)
+
+        coord_y_label = ttk.Label(dim_frame, text="Y:")
+        coord_y_label.grid(row=2, column=0)
+
+        coord_x_input = IntInput(dim_frame, str(self.root.canvas_size[0]), row=1, col=1)
+        coord_y_input = IntInput(dim_frame, str(self.root.canvas_size[1]), row=2, col=1)
+
+        #place pixel size widgets
+        size_frame = ttk.Frame(toplevel)
+        size_frame.grid(row=1, column=0)
+
+        size_label = ttk.Label(size_frame, text="Pixel Size")
+        size_label.grid(row=0, column=0)
+
+        size_input = IntInput(size_frame, str(self.root.canvas_size[0]), row=1, col=0)
+
+        pixel_label = ttk.Label(size_frame, text="px")
+        pixel_label.grid(row=1, column=1)
+
+        #place save button
+        save_button = ttk.Button(toplevel, text="Save Changes", command=toplevel.destroy)
+        save_button.grid(row=2, column=1)
+
+        toplevel.mainloop()
