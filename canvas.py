@@ -13,6 +13,11 @@ class MainCanvas(Canvas):
         self.grid(sticky="NESW", row=1, column=0)
         
         self.bind("<Button-1>", self.draw_pixel)
+        self.bind("<B1-Motion>", self.draw_pixel)
+
+        self.bind("<Button-3>", self.delete_pixel)
+        self.bind("<B3-Motion>", self.delete_pixel)
+
         self.init_grid()
 
     def init_grid(self):
@@ -40,15 +45,24 @@ class MainCanvas(Canvas):
 
     def draw_pixel(self, event: Event):
         SIZE = self.root.pixel_size
-        GRID_X = floor(event.x / self.root.pixel_size)
-        GRID_Y = floor(event.y / self.root.pixel_size)
+        GRID_X = floor(event.x / SIZE)
+        GRID_Y = floor(event.y / SIZE)
+
+        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
         self.delete(f"{GRID_X}-{GRID_Y}")
-
         self.create_rectangle(SIZE * GRID_X, 
                               SIZE * GRID_Y, 
                               (SIZE * GRID_X) + SIZE, 
                               (SIZE * GRID_Y) + SIZE, 
                               fill=self.root.color, tags=f"{GRID_X}-{GRID_Y}")
         
-        print(self.gettags(f"{GRID_X}-{GRID_Y}"))
+    def delete_pixel(self, event: Event):
+        GRID_X = floor(event.x / self.root.pixel_size)
+        GRID_Y = floor(event.y / self.root.pixel_size)
+
+        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
+
+        self.delete(f"{GRID_X}-{GRID_Y}")
