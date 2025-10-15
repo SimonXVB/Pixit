@@ -19,6 +19,8 @@ class MainCanvas(Canvas):
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
 
+        self.bind("<MouseWheel>", self.zoom)
+
         self._init_grid()
 
 
@@ -74,18 +76,17 @@ class MainCanvas(Canvas):
             "y": GRID_Y
         })
 
-        self.update()
-
 
     def _delete_pixel(self, event: Event):
         GRID_X = floor(event.x / self.root.pixel_size)
         GRID_Y = floor(event.y / self.root.pixel_size)
+        TAG = f"{GRID_X}-{GRID_Y}"
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
-        self.items = [item for item in self.items if item["tag"] != f"{GRID_X}-{GRID_Y}"]
-        self.delete(f"{GRID_X}-{GRID_Y}")
+        self.items = [item for item in self.items if item["tag"] != TAG]
+        self.delete(TAG)
 
 
     def _current_drawing_state(self, event: Event):
@@ -104,7 +105,6 @@ class MainCanvas(Canvas):
             SIZE = self.root.pixel_size
             GRID_X = int(item["x"])
             GRID_Y = int(item["y"])
-            TAG = f"{GRID_X}-{GRID_Y}"
 
             self.delete(item["tag"])
 
@@ -112,4 +112,17 @@ class MainCanvas(Canvas):
                         SIZE * GRID_Y, 
                         (SIZE * GRID_X) + SIZE, 
                         (SIZE * GRID_Y) + SIZE,
-                        fill=self.root.color, tags=[TAG, "pixel"])
+                        fill=self.root.color, tags=[f"{GRID_X}-{GRID_Y}", "pixel"])
+
+
+    def zoom(self, event: Event):
+        new_scale: float = 1
+
+        if self.root.scale < 200 and event.delta > 0:
+            self.root.scale += 5
+            new_scale = 1.05
+        elif self.root.scale > -200 and event.delta < 0:
+            self.root.scale -= 5
+            new_scale = 0.95
+
+        self.scale(ALL, event.x, event.y, new_scale, new_scale)
