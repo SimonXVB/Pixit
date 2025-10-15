@@ -21,7 +21,7 @@ class Toolbar(ttk.Frame):
         self.delete_btn = self._create_delete_button(self, 2)
         self.select_btn = self._create_select_button(self, 3)
         self.grid_btn = self._create_grid_button(self, 4)
-        self.dimensions_btn = self._create_change_dimensions_button(self, 5)
+        self.dimensions_btn = self._create_open_dimensions_button(self, 5)
         self.shape_dd = self._create_shape_dropdown(self, 6)
 
 
@@ -87,14 +87,14 @@ class Toolbar(ttk.Frame):
         return dropdown
     
 
-    def _create_change_dimensions_button(self, parent: "Toolbar", col: int):
-        button = ttk.Button(parent, text="dimen", width=10, command=self._change_dimensions_toplevel)
+    def _create_open_dimensions_button(self, parent: "Toolbar", col: int):
+        button = ttk.Button(parent, text="dimen", width=10, command=self._dimensions_toplevel)
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
     
 
-    def _change_dimensions_toplevel(self):
+    def _dimensions_toplevel(self):
         def close_toplevel():
             self.root.change_dimensions(int(size_input.get()), [int(coord_x_input.get()), int(coord_y_input.get())])
             toplevel.destroy()

@@ -13,16 +13,16 @@ class MainCanvas(Canvas):
         super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
         
-        self.bind("<Button-1>", self.current_drawing_state)
-        self.bind("<B1-Motion>", self.current_drawing_state)
+        self.bind("<Button-1>", self._current_drawing_state)
+        self.bind("<B1-Motion>", self._current_drawing_state)
 
-        self.bind("<Button-3>", self.delete_pixel)
-        self.bind("<B3-Motion>", self.delete_pixel)
+        self.bind("<Button-3>", self._delete_pixel)
+        self.bind("<B3-Motion>", self._delete_pixel)
 
-        self.init_grid()
+        self._init_grid()
 
 
-    def init_grid(self):
+    def _init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
 
         self.delete("grid_el")
@@ -49,7 +49,7 @@ class MainCanvas(Canvas):
             self.itemconfig("grid_el", state="hidden")
 
 
-    def draw_pixel(self, event: Event):
+    def _draw_pixel(self, event: Event):
         SIZE = self.root.pixel_size
         GRID_X = floor(event.x / SIZE)
         GRID_Y = floor(event.y / SIZE)
@@ -77,7 +77,7 @@ class MainCanvas(Canvas):
         self.update()
 
 
-    def delete_pixel(self, event: Event):
+    def _delete_pixel(self, event: Event):
         GRID_X = floor(event.x / self.root.pixel_size)
         GRID_Y = floor(event.y / self.root.pixel_size)
 
@@ -88,17 +88,17 @@ class MainCanvas(Canvas):
         self.delete(f"{GRID_X}-{GRID_Y}")
 
 
-    def current_drawing_state(self, event: Event):
+    def _current_drawing_state(self, event: Event):
         if self.root.is_selecting:
             pass
         elif self.root.is_deleting:
-            self.delete_pixel(event)
+            self._delete_pixel(event)
         else:
-            self.draw_pixel(event)
+            self._draw_pixel(event)
 
 
     def update_canvas(self):
-        self.init_grid()
+        self._init_grid()
 
         for item in self.items:
             SIZE = self.root.pixel_size
