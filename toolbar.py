@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 class Toolbar(ttk.Frame):
     def __init__(self, root: "Main") -> None:
-        super().__init__(height=50)
+        super().__init__(master=root, height=50)
 
         self.root = root
 
@@ -73,7 +73,7 @@ class Toolbar(ttk.Frame):
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
-
+    
 
     def _create_shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
         selected = StringVar(parent, self.root.shape)
@@ -86,13 +86,19 @@ class Toolbar(ttk.Frame):
 
         return dropdown
     
+
     def _create_change_dimensions_button(self, parent: "Toolbar", col: int):
         button = ttk.Button(parent, text="dimen", width=10, command=self._change_dimensions_toplevel)
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
     
+
     def _change_dimensions_toplevel(self):
+        def close_toplevel():
+            self.root.change_dimensions(int(size_input.get()), [int(coord_x_input.get()), int(coord_y_input.get())])
+            toplevel.destroy()
+
         toplevel = Toplevel(self.root, padx=10, pady=10)
         toplevel.title("Set Dimensions")
         toplevel.resizable(False, False)
@@ -108,14 +114,20 @@ class Toolbar(ttk.Frame):
         coord_x_label = ttk.Label(dim_frame, text="X:")
         coord_x_label.grid(row=1, column=0)
 
-        coord_y_label = ttk.Label(dim_frame, text="Y:")
-        coord_y_label.grid(row=2, column=0)
-
         coord_x_input = IntInput(dim_frame, str(self.root.canvas_size[0]))
         coord_x_input.grid(row=1, column=1)
 
+        cells_x_label = ttk.Label(dim_frame, text="Cells")
+        cells_x_label.grid(row=1, column=2)
+
+        coord_y_label = ttk.Label(dim_frame, text="Y:")
+        coord_y_label.grid(row=2, column=0)
+
         coord_y_input = IntInput(dim_frame, str(self.root.canvas_size[1]))
         coord_y_input.grid(row=2, column=1)
+
+        cells_y_label = ttk.Label(dim_frame, text="Cells")
+        cells_y_label.grid(row=2, column=2)
 
         #place pixel size widgets
         size_frame = ttk.Frame(toplevel)
@@ -124,14 +136,14 @@ class Toolbar(ttk.Frame):
         size_label = ttk.Label(size_frame, text="Pixel Size")
         size_label.grid(row=0, column=0)
 
-        size_input = IntInput(size_frame, str(self.root.canvas_size[0]))
+        size_input = IntInput(size_frame, str(self.root.pixel_size))
         size_input.grid(row=1, column=0)
 
         pixel_label = ttk.Label(size_frame, text="px")
         pixel_label.grid(row=1, column=1)
 
         #place save button
-        save_button = ttk.Button(toplevel, text="Save Changes", command=toplevel.destroy)
+        save_button = ttk.Button(toplevel, text="Save Changes", command=close_toplevel)
         save_button.grid(row=2, column=1)
 
         toplevel.mainloop()

@@ -69,4 +69,11 @@ class Main(Tk):
 
         self.toolbar.delete_btn.configure(text=str(self.is_deleting))
         self.toolbar.select_btn.configure(text=str(self.is_selecting))
+
+    def change_dimensions(self, pixel_size: int, canvas_size: list[int]):
+        self.pixel_size = pixel_size
+        self.canvas_size = canvas_size
+
+        self.main_canvas.update_canvas()
+
 Main()
