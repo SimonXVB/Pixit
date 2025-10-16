@@ -31,7 +31,7 @@ class MainCanvas(Canvas):
 
         for y in range(self.root.canvas_size[1]):
             for x in range(self.root.canvas_size[0]):
-                SIZE = self.root.pixel_size
+                SIZE = self.root.pixel_size * (self.root.scale / 100)
                 TOP_X = SIZE * x
                 TOP_Y = SIZE * y
                 BOTTOM_X = (SIZE * x) + SIZE
@@ -52,7 +52,8 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
-        SIZE = self.root.pixel_size
+        SCALE = self.root.scale / 100
+        SIZE = self.root.pixel_size * SCALE
         GRID_X = floor(event.x / SIZE)
         GRID_Y = floor(event.y / SIZE)
         TAG = f"{GRID_X}-{GRID_Y}"
@@ -63,10 +64,10 @@ class MainCanvas(Canvas):
         self.items = [item for item in self.items if item["tag"] != f"{GRID_X}-{GRID_Y}"]
         self.delete(f"{GRID_X}-{GRID_Y}")
 
-        self.create_rectangle(SIZE * GRID_X, 
-                              SIZE * GRID_Y, 
-                              (SIZE * GRID_X) + SIZE, 
-                              (SIZE * GRID_Y) + SIZE,
+        self.create_rectangle((SIZE * GRID_X), 
+                              (SIZE * GRID_Y), 
+                              ((SIZE * GRID_X) + SIZE), 
+                              ((SIZE * GRID_Y) + SIZE),
                               fill=self.root.color, tags=[TAG, "pixel"])
         
         self.items.append({
@@ -78,8 +79,9 @@ class MainCanvas(Canvas):
 
 
     def _delete_pixel(self, event: Event):
-        GRID_X = floor(event.x / self.root.pixel_size)
-        GRID_Y = floor(event.y / self.root.pixel_size)
+        SIZE = self.root.pixel_size * (self.root.scale / 100)
+        GRID_X = floor(event.x / SIZE)
+        GRID_Y = floor(event.y / SIZE)
         TAG = f"{GRID_X}-{GRID_Y}"
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
@@ -116,13 +118,15 @@ class MainCanvas(Canvas):
 
 
     def zoom(self, event: Event):
-        new_scale: float = 1
+        canvas_scale = None
 
         if self.root.scale < 200 and event.delta > 0:
+            canvas_scale = (self.root.scale + 5) / self.root.scale
             self.root.scale += 5
-            new_scale = 1.05
-        elif self.root.scale > -200 and event.delta < 0:
+        elif self.root.scale > 5 and event.delta < 0:
+            canvas_scale = (self.root.scale - 5) / self.root.scale
             self.root.scale -= 5
-            new_scale = 0.95
 
-        self.scale(ALL, event.x, event.y, new_scale, new_scale)
+        print(self.canvasx(event.x), self.canvasy(event.y))
+
+        self.scale(ALL, self.canvasx(event.x), self.canvasy(event.y), canvas_scale, canvas_scale) # type: ignore
