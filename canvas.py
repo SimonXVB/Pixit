@@ -9,8 +9,11 @@ class MainCanvas(Canvas):
     def __init__(self, root: "Main") -> None:
         self.root = root
 
-        self.x: float = 0
-        self.y: float = 0
+        self.start_x: float = 0
+        self.start_y: float = 0
+
+        self.grid_offset_x: int = 0
+        self.grid_offset_y: int = 0
 
         self.items: list[dict[str, Union[str, int]]] = []
 
@@ -39,16 +42,36 @@ class MainCanvas(Canvas):
         for y in range(self.root.canvas_size[1]):
             for x in range(self.root.canvas_size[0]):
                 SIZE = self.root.pixel_size * (self.root.scale / 100)
-                TOP_X = SIZE * x
-                TOP_Y = SIZE * y
-                BOTTOM_X = (SIZE * x) + SIZE
-                BOTTOM_Y = (SIZE * y) + SIZE
+                TOP_X = (SIZE * (x + self.grid_offset_x))
+                TOP_Y = (SIZE * (y + self.grid_offset_y))
+                BOTTOM_X = (SIZE * (x + self.grid_offset_x)) + SIZE
+                BOTTOM_Y = (SIZE * (y + self.grid_offset_y)) + SIZE
 
                 self.create_rectangle(TOP_X, 
                                       TOP_Y, 
                                       BOTTOM_X, 
                                       BOTTOM_Y, 
                                       outline="black", tags="grid_el", state=STATE)
+    
+
+    def _update_pixels(self):
+        for item in self.items:
+            SIZE = self.root.pixel_size
+            GRID_X = int(item["x"])
+            GRID_Y = int(item["y"])
+
+            self.delete(item["tag"])
+
+            self.create_rectangle(SIZE * (GRID_X + self.grid_offset_x), 
+                                  SIZE * (GRID_Y + self.grid_offset_y), 
+                                  (SIZE * (GRID_X + self.grid_offset_x)) + SIZE, 
+                                  (SIZE * (GRID_Y + self.grid_offset_x)) + SIZE,
+                                  fill=self.root.color, tags=[f"{GRID_X}-{GRID_Y}", "pixel"])
+            
+            
+    def update_canvas(self):
+        self._init_grid()
+        self._update_pixels()
 
 
     def toggle_grid(self):
@@ -59,16 +82,15 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
-        offX = self.root.offsetX
-        offY = self.root.offsetY
-
         SCALE = self.root.scale / 100
         SIZE = self.root.pixel_size * SCALE
-        GRID_X = floor(event.x / SIZE)
-        GRID_Y = floor(event.y / SIZE)
-        TAG = f"{GRID_X}-{GRID_Y}"
 
-        print(event.x, self.canvasx(event.x))
+        X = event.x - (SIZE * self.grid_offset_x)
+        Y = event.y - (SIZE * self.grid_offset_y)
+
+        GRID_X = floor(X / SIZE)
+        GRID_Y = floor(Y / SIZE)
+        TAG = f"{GRID_X}-{GRID_Y}"
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
@@ -76,10 +98,10 @@ class MainCanvas(Canvas):
         self.items = [item for item in self.items if item["tag"] != f"{GRID_X}-{GRID_Y}"]
         self.delete(f"{GRID_X}-{GRID_Y}")
 
-        self.create_rectangle((SIZE * GRID_X) + offX, 
-                              (SIZE * GRID_Y) + offY, 
-                              ((SIZE * GRID_X) + SIZE) + offX, 
-                              ((SIZE * GRID_Y) + SIZE) + offY,
+        self.create_rectangle(SIZE * (GRID_X + self.grid_offset_x), 
+                              SIZE * (GRID_Y + self.grid_offset_y), 
+                              (SIZE * (GRID_X + self.grid_offset_x)) + SIZE, 
+                              (SIZE * (GRID_Y + self.grid_offset_y)) + SIZE,
                               fill=self.root.color, tags=[TAG, "pixel"])
         
         self.items.append({
@@ -91,13 +113,15 @@ class MainCanvas(Canvas):
 
 
     def _delete_pixel(self, event: Event):
-        SIZE = self.root.pixel_size * (self.root.scale / 100)
-        GRID_X = floor(event.x / SIZE)
-        GRID_Y = floor(event.y / SIZE)
-        TAG = f"{GRID_X}-{GRID_Y}"
+        SCALE = self.root.scale / 100
+        SIZE = self.root.pixel_size * SCALE
 
-        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
-        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
+        X = event.x - (SIZE * self.grid_offset_x)
+        Y = event.y - (SIZE * self.grid_offset_y)
+
+        GRID_X = floor(X / SIZE)
+        GRID_Y = floor(Y / SIZE)
+        TAG = f"{GRID_X}-{GRID_Y}"
 
         self.items = [item for item in self.items if item["tag"] != TAG]
         self.delete(TAG)
@@ -112,50 +136,33 @@ class MainCanvas(Canvas):
             self._draw_pixel(event)
 
 
-    def update_canvas(self):
-        self._init_grid()
-
-        for item in self.items:
-            SIZE = self.root.pixel_size
-            GRID_X = int(item["x"])
-            GRID_Y = int(item["y"])
-
-            self.delete(item["tag"])
-
-            self.create_rectangle(SIZE * int(item["x"]), 
-                        SIZE * GRID_Y, 
-                        (SIZE * GRID_X) + SIZE, 
-                        (SIZE * GRID_Y) + SIZE,
-                        fill=self.root.color, tags=[f"{GRID_X}-{GRID_Y}", "pixel"])
-
-
     def zoom(self, event: Event):
-        canvas_scale = None
-
         if self.root.scale < 200 and event.delta > 0:
-            canvas_scale = (self.root.scale + 5) / self.root.scale
             self.root.scale += 5
         elif self.root.scale > 5 and event.delta < 0:
-            canvas_scale = (self.root.scale - 5) / self.root.scale
             self.root.scale -= 5
 
-        self.xview_scroll(-1, "units")
-        self.yview_scroll(-1, "units")
-
-        self.scale(ALL, 0, 0, canvas_scale, canvas_scale) # type: ignore
+        print(self.root.scale)
 
     def _start_pan(self, event: Event):
-        self.x = self.canvasx(event.x) # type: ignore
-        self.y = self.canvasy(event.y) # type: ignore
+        self.start_x = self.canvasx(event.x) # type: ignore
+        self.start_y = self.canvasy(event.y) # type: ignore
 
     def _pan(self, event: Event):
-        x = int(self.canvasx(event.x) - self.x) * -1 # type: ignore
-        y = int(self.canvasy(event.y) - self.y) * -1 # type: ignore
+        x = int(self.canvasx(event.x) - self.start_x) # type: ignore
+        y = int(self.canvasy(event.y) - self.start_y) # type: ignore
 
-        print(x, y)
+        if x >= self.root.pixel_size:
+            self.grid_offset_x += 1
+            self.start_x = event.x
+        elif x <= -self.root.pixel_size:
+            self.grid_offset_x -= 1
+            self.start_x = event.x
+        elif y >= self.root.pixel_size:
+            self.grid_offset_y += 1
+            self.start_y = event.y
+        elif y <= -self.root.pixel_size:
+            self.grid_offset_y -= 1
+            self.start_y = event.y
 
-        self.xview_scroll(x, "units")
-        self.yview_scroll(y, "units")
-
-        self.x = self.canvasx(event.x) # type: ignore
-        self.y = self.canvasy(event.y) # type: ignore
+        self.update_canvas()
