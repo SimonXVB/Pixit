@@ -25,6 +25,8 @@ class Main(Tk):
         self.pixel_size = 50
         self.canvas_size: list[int] = [20, 15]
         self.scale: float = 100
+        self.offsetX: float = 0
+        self.offsetY: float = 0
 
         self.toolbar = Toolbar(self)
         self.main_canvas = MainCanvas(self)

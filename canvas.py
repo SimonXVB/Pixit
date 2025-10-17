@@ -8,13 +8,20 @@ if TYPE_CHECKING:
 class MainCanvas(Canvas):
     def __init__(self, root: "Main") -> None:
         self.root = root
+
+        self.x: float = 0
+        self.y: float = 0
+
         self.items: list[dict[str, Union[str, int]]] = []
 
-        super().__init__(self.root, bg=self.root.bg)
+        super().__init__(self.root, bg=self.root.bg, yscrollincrement=1, xscrollincrement=1)
         self.grid(sticky="NESW", row=1, column=0)
         
         self.bind("<Button-1>", self._current_drawing_state)
         self.bind("<B1-Motion>", self._current_drawing_state)
+
+        self.bind("<Button-2>", self._start_pan)
+        self.bind("<B2-Motion>", self._pan)
 
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
@@ -52,11 +59,16 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
+        offX = self.root.offsetX
+        offY = self.root.offsetY
+
         SCALE = self.root.scale / 100
         SIZE = self.root.pixel_size * SCALE
         GRID_X = floor(event.x / SIZE)
         GRID_Y = floor(event.y / SIZE)
         TAG = f"{GRID_X}-{GRID_Y}"
+
+        print(event.x, self.canvasx(event.x))
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
@@ -64,10 +76,10 @@ class MainCanvas(Canvas):
         self.items = [item for item in self.items if item["tag"] != f"{GRID_X}-{GRID_Y}"]
         self.delete(f"{GRID_X}-{GRID_Y}")
 
-        self.create_rectangle((SIZE * GRID_X), 
-                              (SIZE * GRID_Y), 
-                              ((SIZE * GRID_X) + SIZE), 
-                              ((SIZE * GRID_Y) + SIZE),
+        self.create_rectangle((SIZE * GRID_X) + offX, 
+                              (SIZE * GRID_Y) + offY, 
+                              ((SIZE * GRID_X) + SIZE) + offX, 
+                              ((SIZE * GRID_Y) + SIZE) + offY,
                               fill=self.root.color, tags=[TAG, "pixel"])
         
         self.items.append({
@@ -127,6 +139,23 @@ class MainCanvas(Canvas):
             canvas_scale = (self.root.scale - 5) / self.root.scale
             self.root.scale -= 5
 
-        print(self.canvasx(event.x), self.canvasy(event.y))
+        self.xview_scroll(-1, "units")
+        self.yview_scroll(-1, "units")
 
-        self.scale(ALL, self.canvasx(event.x), self.canvasy(event.y), canvas_scale, canvas_scale) # type: ignore
+        self.scale(ALL, 0, 0, canvas_scale, canvas_scale) # type: ignore
+
+    def _start_pan(self, event: Event):
+        self.x = self.canvasx(event.x) # type: ignore
+        self.y = self.canvasy(event.y) # type: ignore
+
+    def _pan(self, event: Event):
+        x = int(self.canvasx(event.x) - self.x) * -1 # type: ignore
+        y = int(self.canvasy(event.y) - self.y) * -1 # type: ignore
+
+        print(x, y)
+
+        self.xview_scroll(x, "units")
+        self.yview_scroll(y, "units")
+
+        self.x = self.canvasx(event.x) # type: ignore
+        self.y = self.canvasy(event.y) # type: ignore
