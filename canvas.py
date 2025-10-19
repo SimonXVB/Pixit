@@ -17,17 +17,17 @@ class MainCanvas(Canvas):
 
         self.items: list[dict[str, Union[str, int]]] = []
 
-        super().__init__(self.root, bg=self.root.bg, yscrollincrement=1, xscrollincrement=1)
+        super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
         
         self.bind("<Button-1>", self._current_drawing_state)
         self.bind("<B1-Motion>", self._current_drawing_state)
 
-        self.bind("<Button-2>", self._start_pan)
-        self.bind("<B2-Motion>", self._pan)
-
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
+
+        self.bind("<Button-2>", self._start_pan)
+        self.bind("<B2-Motion>", self._pan)
 
         self.bind("<MouseWheel>", self.zoom)
 
@@ -67,7 +67,7 @@ class MainCanvas(Canvas):
                                   (SIZE * GRID_Y) + self.offset_y, 
                                   ((SIZE * GRID_X) + SIZE) + self.offset_x, 
                                   ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                                  fill=str(item["color"]), tags=[f"{GRID_X}-{GRID_Y}", "pixel"])
+                                  fill=str(item["color"]), tags=f"{GRID_X}-{GRID_Y}")
             
             
     def update_canvas(self):
@@ -83,8 +83,7 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
-        SCALE = self.root.scale / 100
-        SIZE = self.root.pixel_size * SCALE
+        SIZE = self.root.pixel_size * (self.root.scale / 100)
 
         X = event.x - self.offset_x
         Y = event.y - self.offset_y
@@ -103,7 +102,7 @@ class MainCanvas(Canvas):
                               (SIZE * GRID_Y) + self.offset_y, 
                               ((SIZE * GRID_X) + SIZE) + self.offset_x, 
                               ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                              fill=self.root.color, tags=[TAG, "pixel"])
+                              fill=self.root.color, tags=TAG)
         
         self.items.append({
             "tag": TAG,
@@ -114,8 +113,7 @@ class MainCanvas(Canvas):
 
 
     def _delete_pixel(self, event: Event):
-        SCALE = self.root.scale / 100
-        SIZE = self.root.pixel_size * SCALE
+        SIZE = self.root.pixel_size * (self.root.scale / 100)
 
         X = event.x - self.offset_x
         Y = event.y - self.offset_y
