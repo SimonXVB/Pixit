@@ -20,13 +20,13 @@ class MainCanvas(Canvas):
         super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
         
-        self.bind("<Button-1>", self._current_drawing_state)
-        self.bind("<B1-Motion>", self._current_drawing_state)
+        self.bind("<Button-1>", self._perform_action)
+        self.bind("<B1-Motion>", self._perform_action)
 
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
 
-        self.bind("<Button-2>", self._start_pan)
+        self.bind("<Button-2>", self._get_starting_coords)
         self.bind("<B2-Motion>", self._pan)
 
         self.bind("<MouseWheel>", self.zoom)
@@ -126,14 +126,16 @@ class MainCanvas(Canvas):
         self.delete(TAG)
 
 
-    def _current_drawing_state(self, event: Event):
+    def _perform_action(self, event: Event):
         if self.root.is_selecting:
-            pass                                  # <--Todo
+            if event.state == 264:
+                self._select(event)
+            else:
+                self._get_starting_coords(event)
         elif self.root.is_deleting:
             self._delete_pixel(event)
         else:
             self._draw_pixel(event)
-
 
     def zoom(self, event: Event):
         PREV_SCALE = self.root.scale / 100
@@ -153,7 +155,7 @@ class MainCanvas(Canvas):
         self.update_canvas()
 
 
-    def _start_pan(self, event: Event):
+    def _get_starting_coords(self, event: Event):
         self.start_x = event.x
         self.start_y = event.y
 
@@ -169,3 +171,17 @@ class MainCanvas(Canvas):
         self.start_y = event.y
 
         self.update_canvas()
+
+    def _select(self, event: Event):
+        self.delete("select_rect")
+
+        TOP_X = self.start_x
+        TOP_Y = self.start_y
+        BOTTOM_X = event.x
+        BOTTOM_Y = event.y
+
+        self.create_rectangle(TOP_X,
+                              TOP_Y,
+                              BOTTOM_X,
+                              BOTTOM_Y,
+                              outline="red", tags="select_rect")
