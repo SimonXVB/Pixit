@@ -36,22 +36,23 @@ class MainCanvas(Canvas):
 
     def _init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
+        SCALE = self.root.scale / 100
 
         self.delete("grid_el")
 
-        for y in range(self.root.canvas_size[1]):
-            for x in range(self.root.canvas_size[0]):
-                SIZE = self.root.pixel_size * (self.root.scale / 100)
-                TOP_X = (SIZE * x) + self.offset_x
-                TOP_Y = (SIZE * y) + self.offset_y
-                BOTTOM_X = ((SIZE * x) + SIZE) + self.offset_x
-                BOTTOM_Y = ((SIZE * y) + SIZE) + self.offset_y
-
-                self.create_rectangle(TOP_X, 
-                                      TOP_Y, 
-                                      BOTTOM_X, 
-                                      BOTTOM_Y, 
-                                      outline="black", tags="grid_el", state=STATE)
+        for y in range(self.root.canvas_size[1] + 1):
+            self.create_line(self.offset_x, 
+                             ((self.root.pixel_size * y) * SCALE) + self.offset_y,
+                             ((self.root.pixel_size * self.root.canvas_size[0]) * SCALE) + self.offset_x, 
+                             ((self.root.pixel_size * y) * SCALE) + self.offset_y,
+                             tags="grid_el", state=STATE)
+            
+        for x in range(self.root.canvas_size[0] + 1):
+            self.create_line(((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+                             self.offset_y,
+                             ((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+                             ((self.root.pixel_size * self.root.canvas_size[1]) * SCALE) + self.offset_y, 
+                             tags="grid_el", state=STATE)
     
 
     def _update_pixels(self):
