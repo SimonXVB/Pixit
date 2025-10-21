@@ -16,12 +16,14 @@ class MainCanvas(Canvas):
         self.offset_y: int = 0
 
         self.items: list[dict[str, Union[str, int]]] = []
+        self.selected_items: dict[str, int] = {}
 
         super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
         
-        self.bind("<Button-1>", self._perform_action)
-        self.bind("<B1-Motion>", self._perform_action)
+        self.bind("<Button-1>", self._perform_action_click)
+        self.bind("<B1-Motion>", self._perform_action_motion)
+        self.bind("<B1-ButtonRelease>", self._perform_action_up)
 
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
@@ -33,6 +35,25 @@ class MainCanvas(Canvas):
 
         self._init_grid()
 
+    def _perform_action_click(self, event: Event):
+        if self.root.is_selecting:
+            self._get_starting_coords(event)
+        elif self.root.is_deleting:
+            self._delete_pixel(event)
+        else:
+            self._draw_pixel(event)
+
+    def _perform_action_motion(self, event: Event):
+        if self.root.is_selecting:
+            self._select(event)
+        elif self.root.is_deleting:
+            self._delete_pixel(event)
+        else:
+            self._draw_pixel(event)
+
+    def _perform_action_up(self, event: Event):
+        if self.root.is_selecting:
+            self._stop_select(event)
 
     def _init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
@@ -127,18 +148,9 @@ class MainCanvas(Canvas):
         self.delete(TAG)
 
 
-    def _perform_action(self, event: Event):
-        if self.root.is_selecting:
-            if event.state == 264:
-                self._select(event)
-            else:
-                self._get_starting_coords(event)
-        elif self.root.is_deleting:
-            self._delete_pixel(event)
-        else:
-            self._draw_pixel(event)
-
     def zoom(self, event: Event):
+        self.delete("select_outline")
+
         PREV_SCALE = self.root.scale / 100
 
         if self.root.scale < 200 and event.delta > 0:
@@ -157,6 +169,8 @@ class MainCanvas(Canvas):
 
 
     def _get_starting_coords(self, event: Event):
+        self.delete("select_outline")
+
         self.start_x = event.x
         self.start_y = event.y
 
@@ -176,13 +190,42 @@ class MainCanvas(Canvas):
     def _select(self, event: Event):
         self.delete("select_rect")
 
-        TOP_X = self.start_x
-        TOP_Y = self.start_y
-        BOTTOM_X = event.x
-        BOTTOM_Y = event.y
+        START_X = self.start_x
+        START_Y = self.start_y
+        X = event.x
+        Y = event.y
 
-        self.create_rectangle(TOP_X,
-                              TOP_Y,
-                              BOTTOM_X,
-                              BOTTOM_Y,
-                              outline="red", tags="select_rect")
+        self._create_select_outline(START_X, START_Y, X, Y)
+
+
+    def _create_select_outline(self, start_x: int, start_y: int, x: int, y: int):
+        self.delete("select_outline")
+
+        C_SIZE = self.root.canvas_size
+        SIZE = self.root.pixel_size * (self.root.scale / 100)
+
+        x1 = floor((start_x - self.offset_x) / SIZE)
+        y1 = floor((start_y - self.offset_y) / SIZE)
+        x2 = floor((x - self.offset_x) / SIZE)
+        y2 = floor((y - self.offset_y) / SIZE)
+
+        if x2 < x1:
+            x1, x2 = x2, x1
+
+        if y2 < y1:
+            y1, y2 = y2, y1
+
+        x1 = 0 if x1 < 0 else x1
+        y1 = 0 if y1 < 0 else y1
+        x2 = C_SIZE[0] - 1 if x2 > C_SIZE[0] - 1 else x2
+        y2 = C_SIZE[1] - 1 if y2 > C_SIZE[1] - 1 else y2
+
+        self.create_rectangle((x1 * SIZE) + self.offset_x,
+                          (y1 * SIZE) + self.offset_y, 
+                          ((x2 * SIZE) + self.offset_x) + SIZE, 
+                          ((y2 * SIZE) + self.offset_y) + SIZE,
+                          outline="red", tags="select_outline", width=3)
+
+        
+    def _stop_select(self, event: Event):
+        self.delete("select_rect")

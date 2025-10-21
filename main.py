@@ -80,4 +80,5 @@ class Main(Tk):
 
         self.main_canvas.update_canvas()
 
-Main()
+if __name__ == "__main__":
+    Main()
