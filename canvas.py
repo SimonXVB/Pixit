@@ -188,44 +188,52 @@ class MainCanvas(Canvas):
         self.update_canvas()
 
     def _select(self, event: Event):
-        self.delete("select_rect")
+        self.delete("select_outline")
 
         START_X = self.start_x
         START_Y = self.start_y
         X = event.x
         Y = event.y
 
-        self._create_select_outline(START_X, START_Y, X, Y)
-
-
-    def _create_select_outline(self, start_x: int, start_y: int, x: int, y: int):
-        self.delete("select_outline")
-
         C_SIZE = self.root.canvas_size
         SIZE = self.root.pixel_size * (self.root.scale / 100)
 
-        x1 = floor((start_x - self.offset_x) / SIZE)
-        y1 = floor((start_y - self.offset_y) / SIZE)
-        x2 = floor((x - self.offset_x) / SIZE)
-        y2 = floor((y - self.offset_y) / SIZE)
+        x_coords = [floor((START_X - self.offset_x) / SIZE), floor((X - self.offset_x) / SIZE)]
+        y_coords = [floor((START_Y - self.offset_y) / SIZE), floor((Y - self.offset_y) / SIZE)]
 
-        if x2 < x1:
-            x1, x2 = x2, x1
+        if x_coords[1] < x_coords[0]:
+            x_coords[0], x_coords[1] = x_coords[1], x_coords[0]
 
-        if y2 < y1:
-            y1, y2 = y2, y1
+        if y_coords[1] < y_coords[0]:
+            y_coords[0], y_coords[1] = y_coords[1], y_coords[0]
+        
+        for i, el in enumerate(x_coords):
+            if el < 0:
+                x_coords[i] = 0
+            elif el > C_SIZE[0] - 1:
+                x_coords[i] = C_SIZE[0] - 1
 
-        x1 = 0 if x1 < 0 else x1
-        y1 = 0 if y1 < 0 else y1
-        x2 = C_SIZE[0] - 1 if x2 > C_SIZE[0] - 1 else x2
-        y2 = C_SIZE[1] - 1 if y2 > C_SIZE[1] - 1 else y2
+        for i, el in enumerate(y_coords):
+            if el < 0:
+                y_coords[i] = 0
+            elif el > C_SIZE[1] - 1:
+                y_coords[i] = C_SIZE[1] - 1
 
-        self.create_rectangle((x1 * SIZE) + self.offset_x,
-                          (y1 * SIZE) + self.offset_y, 
-                          ((x2 * SIZE) + self.offset_x) + SIZE, 
-                          ((y2 * SIZE) + self.offset_y) + SIZE,
+        self.selected_items = {
+            "start_x": x_coords[0],
+            "start_y" : y_coords[0],
+            "x": x_coords[1],
+            "y": y_coords[1]
+        }
+
+        self.create_rectangle((x_coords[0] * SIZE) + self.offset_x,
+                          (y_coords[0] * SIZE) + self.offset_y, 
+                          ((x_coords[1] * SIZE) + self.offset_x) + SIZE, 
+                          ((y_coords[1] * SIZE) + self.offset_y) + SIZE,
                           outline="red", tags="select_outline", width=3)
 
         
     def _stop_select(self, event: Event):
+        print(self.selected_items)
+
         self.delete("select_rect")
