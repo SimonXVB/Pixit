@@ -1,6 +1,6 @@
 from math import floor
 from tkinter import * # type: ignore
-from typing import TYPE_CHECKING, Union # <--don't like this
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from main import Main
@@ -12,11 +12,10 @@ class MainCanvas(Canvas):
         self.start_x: int = 0
         self.start_y: int = 0
 
-        self.offset_x: int = 0
-        self.offset_y: int = 0
+        self.offset_x: float = 0
+        self.offset_y: float = 0
 
-        self.items: list[dict[str, Union[str, int]]] = []
-        self.selected_items: dict[str, int] = {}
+        self.selected_area: dict[str, int] = {}
 
         super().__init__(self.root, bg=self.root.bg)
         self.grid(sticky="NESW", row=1, column=0)
@@ -33,7 +32,7 @@ class MainCanvas(Canvas):
 
         self.bind("<MouseWheel>", self.zoom)
 
-        self._init_grid()
+        self.init_grid()
 
     def _perform_action_click(self, event: Event):
         if self.root.is_selecting:
@@ -52,14 +51,20 @@ class MainCanvas(Canvas):
             self._draw_pixel(event)
 
     def _perform_action_up(self, event: Event):
-        if self.root.is_selecting:
-            self._stop_select(event)
+        pass # Todo
 
-    def _init_grid(self):
+    def init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
         SCALE = self.root.scale / 100
 
         self.delete("grid_el")
+
+        for x in range(self.root.canvas_size[0] + 1):
+            self.create_line(((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+                             self.offset_y,
+                             ((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+                             ((self.root.pixel_size * self.root.canvas_size[1]) * SCALE) + self.offset_y, 
+                             tags="grid_el", state=STATE)
 
         for y in range(self.root.canvas_size[1] + 1):
             self.create_line(self.offset_x, 
@@ -67,34 +72,6 @@ class MainCanvas(Canvas):
                              ((self.root.pixel_size * self.root.canvas_size[0]) * SCALE) + self.offset_x, 
                              ((self.root.pixel_size * y) * SCALE) + self.offset_y,
                              tags="grid_el", state=STATE)
-            
-        for x in range(self.root.canvas_size[0] + 1):
-            self.create_line(((self.root.pixel_size * x) * SCALE) + self.offset_x, 
-                             self.offset_y,
-                             ((self.root.pixel_size * x) * SCALE) + self.offset_x, 
-                             ((self.root.pixel_size * self.root.canvas_size[1]) * SCALE) + self.offset_y, 
-                             tags="grid_el", state=STATE)
-    
-
-    def _update_pixels(self):
-        for item in self.items:
-            SIZE = self.root.pixel_size * (self.root.scale / 100)
-
-            GRID_X = int(item["x"])
-            GRID_Y = int(item["y"])
-
-            self.delete(item["tag"])
-
-            self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                                  (SIZE * GRID_Y) + self.offset_y, 
-                                  ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                                  ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                                  fill=str(item["color"]), tags=f"{GRID_X}-{GRID_Y}")
-            
-            
-    def update_canvas(self):
-        self._init_grid()
-        self._update_pixels()
 
 
     def toggle_grid(self):
@@ -106,50 +83,38 @@ class MainCanvas(Canvas):
 
     def _draw_pixel(self, event: Event):
         SIZE = self.root.pixel_size * (self.root.scale / 100)
+        GRID_X = floor((event.x - self.offset_x) / SIZE)
+        GRID_Y = floor((event.y - self.offset_y) / SIZE)
 
-        X = event.x - self.offset_x
-        Y = event.y - self.offset_y
-
-        GRID_X = floor(X / SIZE)
-        GRID_Y = floor(Y / SIZE)
         TAG = f"{GRID_X}-{GRID_Y}"
+        ITEM = self.find_withtag(TAG)
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
-        self.items = [item for item in self.items if item["tag"] != f"{GRID_X}-{GRID_Y}"]
-        self.delete(f"{GRID_X}-{GRID_Y}")
-
-        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                              (SIZE * GRID_Y) + self.offset_y, 
-                              ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                              ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                              fill=self.root.color, tags=TAG)
-        
-        self.items.append({
-            "tag": TAG,
-            "color": self.root.color,
-            "x": GRID_X,
-            "y": GRID_Y
-        })
-
+        try:
+            self.itemconfig(ITEM[0], fill=self.root.color)
+        except IndexError:
+            self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
+                                (SIZE * GRID_Y) + self.offset_y, 
+                                ((SIZE * GRID_X) + SIZE) + self.offset_x, 
+                                ((SIZE * GRID_Y) + SIZE) + self.offset_y,
+                                fill=self.root.color, tags=TAG)
 
     def _delete_pixel(self, event: Event):
         SIZE = self.root.pixel_size * (self.root.scale / 100)
+        GRID_X = floor((event.x - self.offset_x) / SIZE)
+        GRID_Y = floor((event.y - self.offset_y) / SIZE)
 
-        X = event.x - self.offset_x
-        Y = event.y - self.offset_y
-
-        GRID_X = floor(X / SIZE)
-        GRID_Y = floor(Y / SIZE)
-        TAG = f"{GRID_X}-{GRID_Y}"
-
-        self.items = [item for item in self.items if item["tag"] != TAG]
-        self.delete(TAG)
+        try:
+            item = self.find_withtag(f"{GRID_X}-{GRID_Y}")[0]
+            self.delete(item)
+        except IndexError:
+            pass
 
 
     def zoom(self, event: Event):
-        self.delete("select_outline")
+        self._clear_select()
 
         PREV_SCALE = self.root.scale / 100
 
@@ -162,14 +127,14 @@ class MainCanvas(Canvas):
         POS_X = event.x
         POS_Y = event.y
 
-        self.offset_x = int(POS_X - (POS_X - self.offset_x) * (SCALE / PREV_SCALE))
-        self.offset_y = int(POS_Y - (POS_Y - self.offset_y) * (SCALE / PREV_SCALE))
+        self.offset_x = POS_X - (POS_X - self.offset_x) * (SCALE / PREV_SCALE)
+        self.offset_y = POS_Y - (POS_Y - self.offset_y) * (SCALE / PREV_SCALE)
 
-        self.update_canvas()
+        self.scale(ALL, POS_X, POS_Y, SCALE / PREV_SCALE, SCALE / PREV_SCALE)
 
 
     def _get_starting_coords(self, event: Event):
-        self.delete("select_outline")
+        self._clear_select()
 
         self.start_x = event.x
         self.start_y = event.y
@@ -185,10 +150,10 @@ class MainCanvas(Canvas):
         self.start_x = event.x
         self.start_y = event.y
 
-        self.update_canvas()
+        self.move(ALL, x, y) # type: ignore
 
     def _select(self, event: Event):
-        self.delete("select_outline")
+        self._clear_select()
 
         START_X = self.start_x
         START_Y = self.start_y
@@ -198,8 +163,8 @@ class MainCanvas(Canvas):
         C_SIZE = self.root.canvas_size
         SIZE = self.root.pixel_size * (self.root.scale / 100)
 
-        x_coords = [floor((START_X - self.offset_x) / SIZE), floor((X - self.offset_x) / SIZE)]
-        y_coords = [floor((START_Y - self.offset_y) / SIZE), floor((Y - self.offset_y) / SIZE)]
+        x_coords = [floor((START_X - self.offset_x) / SIZE), floor((X - self.offset_x) / SIZE)] # [top x, bottom x]
+        y_coords = [floor((START_Y - self.offset_y) / SIZE), floor((Y - self.offset_y) / SIZE)] # [top y, bottom y]
 
         if x_coords[1] < x_coords[0]:
             x_coords[0], x_coords[1] = x_coords[1], x_coords[0]
@@ -219,11 +184,11 @@ class MainCanvas(Canvas):
             elif el > C_SIZE[1] - 1:
                 y_coords[i] = C_SIZE[1] - 1
 
-        self.selected_items = {
-            "start_x": x_coords[0],
-            "start_y" : y_coords[0],
-            "x": x_coords[1],
-            "y": y_coords[1]
+        self.selected_area = {
+            "top_x": x_coords[0],
+            "top_y" : y_coords[0],
+            "bottom_x": x_coords[1],
+            "bottom_y": y_coords[1]
         }
 
         self.create_rectangle((x_coords[0] * SIZE) + self.offset_x,
@@ -233,7 +198,6 @@ class MainCanvas(Canvas):
                           outline="red", tags="select_outline", width=3)
 
         
-    def _stop_select(self, event: Event):
-        print(self.selected_items)
-
-        self.delete("select_rect")
+    def _clear_select(self):
+        self.delete("select_outline")
+        self.selected_area = {}
