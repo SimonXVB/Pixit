@@ -23,7 +23,7 @@ class Main(Tk):
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.shape: str = self.shape_options[0]
         self.pixel_size = 50
-        self.canvas_size: list[int] = [20, 15]
+        self.canvas_size: list[int] = [100, 100]
         self.scale: int = 100
         self.offsetX: float = 0
         self.offsetY: float = 0

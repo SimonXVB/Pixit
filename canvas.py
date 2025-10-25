@@ -30,9 +30,12 @@ class MainCanvas(Canvas):
         self.bind("<Button-2>", self._get_starting_coords)
         self.bind("<B2-Motion>", self._pan)
 
-        self.bind("<MouseWheel>", self.zoom)
+        self.bind("<MouseWheel>", self._zoom)
+        
+        self.bind("<BackSpace>", self._delete_selected)
 
         self.init_grid()
+
 
     def _perform_action_click(self, event: Event):
         if self.root.is_selecting:
@@ -51,7 +54,7 @@ class MainCanvas(Canvas):
             self._draw_pixel(event)
 
     def _perform_action_up(self, event: Event):
-        pass # Todo
+        pass
 
     def init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
@@ -99,7 +102,8 @@ class MainCanvas(Canvas):
                                 (SIZE * GRID_Y) + self.offset_y, 
                                 ((SIZE * GRID_X) + SIZE) + self.offset_x, 
                                 ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                                fill=self.root.color, tags=TAG)
+                                fill=self.root.color, tags=[TAG, "pixel"])
+            
 
     def _delete_pixel(self, event: Event):
         SIZE = self.root.pixel_size * (self.root.scale / 100)
@@ -113,7 +117,7 @@ class MainCanvas(Canvas):
             pass
 
 
-    def zoom(self, event: Event):
+    def _zoom(self, event: Event):
         self._clear_select()
 
         PREV_SCALE = self.root.scale / 100
@@ -134,6 +138,7 @@ class MainCanvas(Canvas):
 
 
     def _get_starting_coords(self, event: Event):
+        self.focus_set()
         self._clear_select()
 
         self.start_x = event.x
@@ -192,12 +197,23 @@ class MainCanvas(Canvas):
         }
 
         self.create_rectangle((x_coords[0] * SIZE) + self.offset_x,
-                          (y_coords[0] * SIZE) + self.offset_y, 
-                          ((x_coords[1] * SIZE) + self.offset_x) + SIZE, 
-                          ((y_coords[1] * SIZE) + self.offset_y) + SIZE,
-                          outline="red", tags="select_outline", width=3)
+                        (y_coords[0] * SIZE) + self.offset_y, 
+                        ((x_coords[1] * SIZE) + self.offset_x) + SIZE, 
+                        ((y_coords[1] * SIZE) + self.offset_y) + SIZE,
+                        outline="red", tags="select_outline", width=3)
 
         
     def _clear_select(self):
         self.delete("select_outline")
         self.selected_area = {}
+
+        self.itemconfigure("pixel", state="normal")
+
+
+    def _delete_selected(self, event: Event):
+        try:
+            for i in range(self.selected_area["top_y"], self.selected_area["bottom_y"] + 1):
+                for j in range(self.selected_area["top_x"], self.selected_area["bottom_x"] + 1):
+                    self.delete(f"{j}-{i}")
+        except KeyError:
+            pass
