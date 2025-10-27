@@ -22,8 +22,8 @@ class Main(Tk):
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.shape: str = self.shape_options[0]
-        self.pixel_size = 50
-        self.canvas_size: list[int] = [100, 100]
+        self.pixel_size = 1
+        self.canvas_size: list[int] = [1000, 1000]
         self.scale: int = 100
         self.offsetX: float = 0
         self.offsetY: float = 0
@@ -36,6 +36,7 @@ class Main(Tk):
 
     def set_color(self, button: ttk.Button):
         color: str | None = colorchooser.askcolor(initialcolor=self.color)[1]
+
 
         if color != None:
             self.color = color

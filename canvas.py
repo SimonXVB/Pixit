@@ -1,14 +1,14 @@
 import time
 from tkinter import * # type: ignore
 from typing import TYPE_CHECKING
-from PIL import ImageTk, Image, ImageDraw
 from math import floor
+from PIL import Image, ImageTk
 
 if TYPE_CHECKING:
     from main import Main
 
 class MainCanvas(Canvas):
-    def __init__(self, root: "Main") -> None:
+    def __init__(self, root: "Main"):
         self.root = root
 
         self.start_x: int = 0
@@ -19,7 +19,7 @@ class MainCanvas(Canvas):
 
         self.selected_area: dict[str, int] = {}
 
-        super().__init__(self.root, bg=self.root.bg)
+        super().__init__(self.root, bg=self.root.bg, highlightthickness=0)
         self.grid(sticky="NESW", row=1, column=0)
         
         self.bind("<Button-1>", self._perform_action_click)
@@ -31,13 +31,11 @@ class MainCanvas(Canvas):
 
         self.bind("<Button-2>", self._get_starting_coords)
         self.bind("<B2-Motion>", self._pan)
-        self.bind("<B2-ButtonRelease>", self._stop_pan)
 
         self.bind("<MouseWheel>", self._zoom)
         self.bind("<BackSpace>", self._delete_selected)
 
         self.image = Image.new("RGBA", (1000, 1000), "white")
-        self.draw_image = ImageDraw.Draw(self.image)
         self.scaled_image = self.image
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.image_item = self.create_image((0,0), image=self.photo_image, anchor="nw") # type: ignore
@@ -51,6 +49,7 @@ class MainCanvas(Canvas):
         else:
             self._draw_pixel(event)
 
+
     def _perform_action_motion(self, event: Event):
         if self.root.is_selecting:
             self._select(event)
@@ -59,9 +58,21 @@ class MainCanvas(Canvas):
         else:
             self._draw_pixel(event)
 
+
     def _perform_action_up(self, event: Event):
-        self.photo_image = ImageTk.PhotoImage(self.scaled_image) # type: ignore
+        s = time.time()
+
+        SCALE = self.root.scale / 100
+
+        self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
+        self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
+
+        self.delete("pixel")
+
+        e = time.time()
+        print(e-s)
+        
 
     def init_grid(self):
         STATE = "normal" if self.root.show_grid else "hidden"
@@ -92,33 +103,27 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
+        s = time.time()
+
         SIZE = self.root.pixel_size * (self.root.scale / 100)
         GRID_X = floor((event.x - self.offset_x) / SIZE)
         GRID_Y = floor((event.y - self.offset_y) / SIZE)
 
-        TAG = f"{GRID_X}-{GRID_Y}"
-        ITEM = self.find_withtag(TAG)
-
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
-        try:
-            self.itemconfig(ITEM[0], fill=self.root.color)
-        except IndexError:
-            self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                                (SIZE * GRID_Y) + self.offset_y, 
-                                ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                                ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                                fill=self.root.color, tags=[TAG, "pixel"])
-            
-            self.draw_image.rectangle([((SIZE * GRID_X), 
-                                      (SIZE * GRID_Y)), 
-                                      (((SIZE * GRID_X) + SIZE), 
-                                      ((SIZE * GRID_Y) + SIZE))],
-                                       fill="red")
-            
 
-            
+        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
+                             (SIZE * GRID_Y) + self.offset_y, 
+                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
+                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
+                             fill=self.root.color, tags="pixel")
+
+        # rgb = tuple(int(self.root.color.lstrip("#")[i:i+2],16) for i in (0, 2, 4))
+        self.image.putpixel(xy=(GRID_X, GRID_Y), value=(255, 0, 0))
+
+        e = time.time()
+        print(e-s)
 
     def _delete_pixel(self, event: Event):
         SIZE = self.root.pixel_size * (self.root.scale / 100)
@@ -139,7 +144,7 @@ class MainCanvas(Canvas):
 
         PREV_SCALE = self.root.scale / 100
 
-        if self.root.scale < 200 and event.delta > 0:
+        if self.root.scale < 500 and event.delta > 0:
             self.root.scale += 5
         elif self.root.scale > 5 and event.delta < 0:
             self.root.scale -= 5
@@ -153,19 +158,49 @@ class MainCanvas(Canvas):
         self.offset_x = POS_X - (POS_X - self.offset_x) * (SCALE / PREV_SCALE)
         self.offset_y = POS_Y - (POS_Y - self.offset_y) * (SCALE / PREV_SCALE)
 
-        self.scaled_image = self.image.resize((int(self.image.width * SCALE), int(self.image.height * SCALE)), Image.NEAREST) # type: ignore 
+        image_coords = self.coords(self.image_item)
+        top_x = 0
+        top_y = 0
+        bottom_x = 0
+        bottom_y = 0
+
+        if image_coords[0] > 0:
+            top_x = 0
+        else:
+            top_x = floor(image_coords[0] * -1)
+
+        if image_coords[1] > 0:
+            top_y = 0
+        else:
+            top_y = floor(image_coords[1] * -1)
+            
+        if self.winfo_width() + top_x > self.scaled_image.width:
+            bottom_x = self.scaled_image.width
+        else:
+            bottom_x = floor(self.winfo_width() + top_x)
+
+        if self.winfo_height() + top_y > self.scaled_image.height:
+            bottom_y = self.scaled_image.height
+        else:
+            bottom_y = floor(self.winfo_height() + top_y)
+
+
+        print(top_x, top_y, bottom_x, bottom_y)
+
+        crop = self.image.crop((top_x, top_y, bottom_x, bottom_y))
+
+        self.scaled_image = crop.resize((int(crop.width * SCALE), int(crop.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
 
         self.scale(ALL, POS_X, POS_Y, SCALE / PREV_SCALE, SCALE / PREV_SCALE)
 
         end = time.time()
-        print(end - start)
+        #print(end-start)
+        
 
 
     def _get_starting_coords(self, event: Event):
-        self.itemconfig("pixel", state="hidden")
-
         self.focus_set()
         self._clear_select()
 
@@ -185,8 +220,7 @@ class MainCanvas(Canvas):
 
         self.move(ALL, x, y) # type: ignore
 
-    def _stop_pan(self, event: Event):
-        self.itemconfig("pixel", state="normal")
+        print(self.bbox(self.image_item))
 
     def _select(self, event: Event):
         self._clear_select()
