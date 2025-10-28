@@ -138,13 +138,11 @@ class MainCanvas(Canvas):
 
 
     def _zoom(self, event: Event):
-        start = time.time()
-
         self._clear_select()
 
         PREV_SCALE = self.root.scale / 100
 
-        if self.root.scale < 500 and event.delta > 0:
+        if self.root.scale < 300 and event.delta > 0:
             self.root.scale += 5
         elif self.root.scale > 5 and event.delta < 0:
             self.root.scale -= 5
@@ -158,47 +156,12 @@ class MainCanvas(Canvas):
         self.offset_x = POS_X - (POS_X - self.offset_x) * (SCALE / PREV_SCALE)
         self.offset_y = POS_Y - (POS_Y - self.offset_y) * (SCALE / PREV_SCALE)
 
-        image_coords = self.coords(self.image_item)
-        top_x = 0
-        top_y = 0
-        bottom_x = 0
-        bottom_y = 0
-
-        if image_coords[0] > 0:
-            top_x = 0
-        else:
-            top_x = floor(image_coords[0] * -1)
-
-        if image_coords[1] > 0:
-            top_y = 0
-        else:
-            top_y = floor(image_coords[1] * -1)
-            
-        if self.winfo_width() + top_x > self.scaled_image.width:
-            bottom_x = self.scaled_image.width
-        else:
-            bottom_x = floor(self.winfo_width() + top_x)
-
-        if self.winfo_height() + top_y > self.scaled_image.height:
-            bottom_y = self.scaled_image.height
-        else:
-            bottom_y = floor(self.winfo_height() + top_y)
-
-
-        print(top_x, top_y, bottom_x, bottom_y)
-
-        crop = self.image.crop((top_x, top_y, bottom_x, bottom_y))
-
-        self.scaled_image = crop.resize((int(crop.width * SCALE), int(crop.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
+        self.scaled_image = self.image.resize((int(self.image.width * SCALE), int(self.image.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
 
         self.scale(ALL, POS_X, POS_Y, SCALE / PREV_SCALE, SCALE / PREV_SCALE)
-
-        end = time.time()
-        #print(end-start)
         
-
 
     def _get_starting_coords(self, event: Event):
         self.focus_set()
@@ -219,8 +182,6 @@ class MainCanvas(Canvas):
         self.start_y = event.y
 
         self.move(ALL, x, y) # type: ignore
-
-        print(self.bbox(self.image_item))
 
     def _select(self, event: Event):
         self._clear_select()
