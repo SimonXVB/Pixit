@@ -34,6 +34,7 @@ class MainCanvas(Canvas):
 
         self.bind("<MouseWheel>", self._zoom)
         self.bind("<BackSpace>", self._delete_selected)
+        self.bind("<Motion>", self._display_pointer_location)
 
         self.image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
         self.scaled_image = self.image
@@ -72,6 +73,22 @@ class MainCanvas(Canvas):
         self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
+
+    def _display_pointer_location(self, event: Event):
+        self.delete("pointer")
+
+        SIZE = self.root.pixel_size * (self.root.scale / 100)
+        GRID_X = floor((event.x - self.offset_x) / SIZE)
+        GRID_Y = floor((event.y - self.offset_y) / SIZE)
+
+        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
+
+        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
+                             (SIZE * GRID_Y) + self.offset_y, 
+                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
+                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
+                             fill=self.root.color, tags="pointer")
         
 
     # def init_grid(self):
@@ -122,7 +139,7 @@ class MainCanvas(Canvas):
                              (SIZE * GRID_Y) + self.offset_y, 
                              ((SIZE * GRID_X) + SIZE) + self.offset_x, 
                              ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                             fill=self.root.color, tags="pixel")
+                             fill=self.root.color, outline="", tags="pixel")
 
         rgb = tuple(int(self.root.color.lstrip("#")[i:i+2],16) for i in (0, 2, 4))
         self.image.putpixel(xy=(GRID_X, GRID_Y), value=rgb)
