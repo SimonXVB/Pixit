@@ -28,6 +28,7 @@ class MainCanvas(Canvas):
 
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
+        self.bind("<B3-ButtonRelease>", self._perform_action_up)
 
         self.bind("<Button-2>", self._get_starting_coords)
         self.bind("<B2-Motion>", self._pan)
@@ -35,7 +36,7 @@ class MainCanvas(Canvas):
         self.bind("<MouseWheel>", self._zoom)
         self.bind("<BackSpace>", self._delete_selected)
 
-        self.image = Image.new("RGBA", (1000, 1000), "white")
+        self.image = Image.new("RGBA", (1000, 1000))
         self.scaled_image = self.image
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.image_item = self.create_image((0,0), image=self.photo_image, anchor="nw") # type: ignore
@@ -60,18 +61,16 @@ class MainCanvas(Canvas):
 
 
     def _perform_action_up(self, event: Event):
-        s = time.time()
+        if self.root.is_selecting:
+            pass
+        else:
+            SCALE = self.root.scale / 100
 
-        SCALE = self.root.scale / 100
+            self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
+            self.photo_image = ImageTk.PhotoImage(self.scaled_image)
+            self.itemconfig(self.image_item, image=self.photo_image)
 
-        self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
-        self.photo_image = ImageTk.PhotoImage(self.scaled_image)
-        self.itemconfig(self.image_item, image=self.photo_image)
-
-        self.delete("pixel")
-
-        e = time.time()
-        print(e-s)
+            self.delete("pixel")
         
 
     def init_grid(self):
@@ -103,8 +102,6 @@ class MainCanvas(Canvas):
 
 
     def _draw_pixel(self, event: Event):
-        s = time.time()
-
         SIZE = self.root.pixel_size * (self.root.scale / 100)
         GRID_X = floor((event.x - self.offset_x) / SIZE)
         GRID_Y = floor((event.y - self.offset_y) / SIZE)
@@ -119,22 +116,22 @@ class MainCanvas(Canvas):
                              ((SIZE * GRID_Y) + SIZE) + self.offset_y,
                              fill=self.root.color, tags="pixel")
 
-        # rgb = tuple(int(self.root.color.lstrip("#")[i:i+2],16) for i in (0, 2, 4))
-        self.image.putpixel(xy=(GRID_X, GRID_Y), value=(255, 0, 0))
+        rgb = tuple(int(self.root.color.lstrip("#")[i:i+2],16) for i in (0, 2, 4))
+        self.image.putpixel(xy=(GRID_X, GRID_Y), value=rgb)
 
-        e = time.time()
-        print(e-s)
 
     def _delete_pixel(self, event: Event):
         SIZE = self.root.pixel_size * (self.root.scale / 100)
         GRID_X = floor((event.x - self.offset_x) / SIZE)
         GRID_Y = floor((event.y - self.offset_y) / SIZE)
 
-        try:
-            item = self.find_withtag(f"{GRID_X}-{GRID_Y}")[0]
-            self.delete(item)
-        except IndexError:
-            pass
+        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
+                             (SIZE * GRID_Y) + self.offset_y, 
+                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
+                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
+                             fill=self.root.bg, tags="pixel", outline="")
+
+        self.image.putpixel(xy=(GRID_X, GRID_Y), value=(255, 255, 255, 0))
 
 
     def _zoom(self, event: Event):
