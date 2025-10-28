@@ -37,7 +37,6 @@ class Main(Tk):
     def set_color(self, button: ttk.Button):
         color: str | None = colorchooser.askcolor(initialcolor=self.color)[1]
 
-
         if color != None:
             self.color = color
             button.configure(text=color)
@@ -79,7 +78,7 @@ class Main(Tk):
         self.pixel_size = pixel_size
         self.canvas_size = canvas_size
 
-        self.main_canvas.init_grid()
+        self.main_canvas.resize_canvas()
 
 if __name__ == "__main__":
     Main()

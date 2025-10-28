@@ -1,4 +1,3 @@
-import time
 from tkinter import * # type: ignore
 from typing import TYPE_CHECKING
 from math import floor
@@ -36,7 +35,7 @@ class MainCanvas(Canvas):
         self.bind("<MouseWheel>", self._zoom)
         self.bind("<BackSpace>", self._delete_selected)
 
-        self.image = Image.new("RGBA", (1000, 1000))
+        self.image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
         self.scaled_image = self.image
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.image_item = self.create_image((0,0), image=self.photo_image, anchor="nw") # type: ignore
@@ -64,34 +63,43 @@ class MainCanvas(Canvas):
         if self.root.is_selecting:
             pass
         else:
-            SCALE = self.root.scale / 100
-
-            self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
-            self.photo_image = ImageTk.PhotoImage(self.scaled_image)
-            self.itemconfig(self.image_item, image=self.photo_image)
-
+            self.scale_image()
             self.delete("pixel")
-        
 
-    def init_grid(self):
-        STATE = "normal" if self.root.show_grid else "hidden"
+    def scale_image(self):
         SCALE = self.root.scale / 100
 
-        self.delete("grid_el")
+        self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
+        self.photo_image = ImageTk.PhotoImage(self.scaled_image)
+        self.itemconfig(self.image_item, image=self.photo_image)
+        
 
-        for x in range(self.root.canvas_size[0] + 1):
-            self.create_line(((self.root.pixel_size * x) * SCALE) + self.offset_x, 
-                             self.offset_y,
-                             ((self.root.pixel_size * x) * SCALE) + self.offset_x, 
-                             ((self.root.pixel_size * self.root.canvas_size[1]) * SCALE) + self.offset_y, 
-                             tags="grid_el", state=STATE)
+    # def init_grid(self):
+    #     STATE = "normal" if self.root.show_grid else "hidden"
+    #     SCALE = self.root.scale / 100
 
-        for y in range(self.root.canvas_size[1] + 1):
-            self.create_line(self.offset_x, 
-                             ((self.root.pixel_size * y) * SCALE) + self.offset_y,
-                             ((self.root.pixel_size * self.root.canvas_size[0]) * SCALE) + self.offset_x, 
-                             ((self.root.pixel_size * y) * SCALE) + self.offset_y,
-                             tags="grid_el", state=STATE)
+    #     self.delete("grid_el")
+
+    #     for x in range(self.root.canvas_size[0] + 1):
+    #         self.create_line(((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+    #                          self.offset_y,
+    #                          ((self.root.pixel_size * x) * SCALE) + self.offset_x, 
+    #                          ((self.root.pixel_size * self.root.canvas_size[1]) * SCALE) + self.offset_y, 
+    #                          tags="grid_el", state=STATE)
+
+    #     for y in range(self.root.canvas_size[1] + 1):
+    #         self.create_line(self.offset_x, 
+    #                          ((self.root.pixel_size * y) * SCALE) + self.offset_y,
+    #                          ((self.root.pixel_size * self.root.canvas_size[0]) * SCALE) + self.offset_x, 
+    #                          ((self.root.pixel_size * y) * SCALE) + self.offset_y,
+    #                          tags="grid_el", state=STATE)
+
+    def resize_canvas(self):
+        new_image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
+        new_image.paste(self.image, (0, 0))
+
+        self.image = new_image
+        self.scale_image()
 
 
     def toggle_grid(self):
@@ -153,10 +161,7 @@ class MainCanvas(Canvas):
         self.offset_x = POS_X - (POS_X - self.offset_x) * (SCALE / PREV_SCALE)
         self.offset_y = POS_Y - (POS_Y - self.offset_y) * (SCALE / PREV_SCALE)
 
-        self.scaled_image = self.image.resize((int(self.image.width * SCALE), int(self.image.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
-        self.photo_image = ImageTk.PhotoImage(self.scaled_image)
-        self.itemconfig(self.image_item, image=self.photo_image)
-
+        self.scale_image()
         self.scale(ALL, POS_X, POS_Y, SCALE / PREV_SCALE, SCALE / PREV_SCALE)
         
 
@@ -232,9 +237,4 @@ class MainCanvas(Canvas):
 
 
     def _delete_selected(self, event: Event):
-        try:
-            for i in range(self.selected_area["top_y"], self.selected_area["bottom_y"] + 1):
-                for j in range(self.selected_area["top_x"], self.selected_area["bottom_x"] + 1):
-                    self.delete(f"{j}-{i}")
-        except KeyError:
-            pass
+        pass
