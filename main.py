@@ -22,7 +22,7 @@ class Main(Tk):
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.shape: str = self.shape_options[0]
-        self.pixel_size = 1
+        self.pixel_size = 100
         self.canvas_size: list[int] = [1000, 1000]
         self.scale: int = 100
         self.offsetX: float = 0

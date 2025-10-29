@@ -1,3 +1,4 @@
+import time
 from tkinter import * # type: ignore
 from typing import TYPE_CHECKING
 from math import floor
@@ -5,6 +6,14 @@ from PIL import Image, ImageTk
 
 if TYPE_CHECKING:
     from main import Main
+
+def ex_time(func): # type: ignore
+    def wrapper(*args, **kwargs) -> None: # type: ignore
+        s = time.time()
+        func(*args, **kwargs)
+        e = time.time()
+        print(e-s)
+    return wrapper # type: ignore
 
 class MainCanvas(Canvas):
     def __init__(self, root: "Main"):
@@ -37,7 +46,9 @@ class MainCanvas(Canvas):
         self.bind("<Motion>", self._display_pointer_location)
 
         self.image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
+        self.loaded_image = self.image.load()
         self.scaled_image = self.image
+        
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.image_item = self.create_image((0,0), image=self.photo_image, anchor="nw") # type: ignore
 
@@ -65,6 +76,7 @@ class MainCanvas(Canvas):
             pass
         else:
             self.scale_image()
+            self.delete("pointer")
             self.delete("pixel")
 
     def scale_image(self):
@@ -74,21 +86,54 @@ class MainCanvas(Canvas):
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
 
-    def _display_pointer_location(self, event: Event):
-        self.delete("pointer")
 
-        SIZE = self.root.pixel_size * (self.root.scale / 100)
-        GRID_X = floor((event.x - self.offset_x) / SIZE)
-        GRID_Y = floor((event.y - self.offset_y) / SIZE)
+    def resize_canvas(self):
+        new_image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
+        new_image.paste(self.image, (0, 0))
+
+        self.image = new_image
+        self.loaded_image = self.image.load()
+        self.scale_image()
+
+    def place_pixel(self, event: Event, fill: str, tag: str, delete: bool, commit_pixel:bool):
+        SCALE = self.root.scale / 100
+        GRID_X = floor((event.x - self.offset_x) / SCALE)
+        GRID_Y = floor((event.y - self.offset_y) / SCALE)
 
         if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
         if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
 
-        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                             (SIZE * GRID_Y) + self.offset_y, 
-                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                             fill=self.root.color, tags="pointer")
+        START_X = GRID_X - int(self.root.pixel_size / 2) if GRID_X - int(self.root.pixel_size / 2) > 0 else 0
+        START_Y = GRID_Y - int(self.root.pixel_size / 2) if GRID_Y - int(self.root.pixel_size / 2) > 0 else 0
+
+        SIZE_X = self.root.pixel_size if GRID_X - int(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_X - int(self.root.pixel_size / 2))
+        SIZE_Y = self.root.pixel_size if GRID_Y - int(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_Y - int(self.root.pixel_size / 2))
+
+        END_X = START_X + SIZE_X if START_X + SIZE_X < self.root.canvas_size[0] else self.root.canvas_size[0]
+        END_Y = START_Y + SIZE_Y if START_Y + SIZE_Y < self.root.canvas_size[1] else self.root.canvas_size[1]
+
+        self.create_rectangle((SCALE * START_X) + self.offset_x,
+                            (SCALE * START_Y) + self.offset_y,
+                            (SCALE * END_X) + self.offset_x,
+                            (SCALE * END_Y) + self.offset_y,
+                            fill=fill, outline="", tags=tag)
+        
+        if commit_pixel:
+            rgb = tuple(int(fill.lstrip("#")[i:i+2],16) for i in (0, 2, 4)) if not delete else (255, 255, 255, 0)
+
+            for i in range(self.root.pixel_size):
+                for j in range(self.root.pixel_size):
+                    try:
+                        self.loaded_image[START_X + j, START_Y + i] = rgb # type: ignore
+                    except IndexError:
+                        pass
+        
+
+    def toggle_grid(self):
+        if self.root.show_grid:
+            self.itemconfig("grid_el", state="normal")
+        else:
+            self.itemconfig("grid_el", state="hidden")
         
 
     # def init_grid(self):
@@ -111,52 +156,30 @@ class MainCanvas(Canvas):
     #                          ((self.root.pixel_size * y) * SCALE) + self.offset_y,
     #                          tags="grid_el", state=STATE)
 
-    def resize_canvas(self):
-        new_image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
-        new_image.paste(self.image, (0, 0))
 
-        self.image = new_image
-        self.scale_image()
-
-
-    def toggle_grid(self):
-        if self.root.show_grid:
-            self.itemconfig("grid_el", state="normal")
-        else:
-            self.itemconfig("grid_el", state="hidden")
+    def _display_pointer_location(self, event: Event):
+        self.delete("pointer")
+        self.place_pixel(event=event,
+                         fill=self.root.color,
+                         delete=False,
+                         tag="pointer",
+                         commit_pixel=False)
 
 
     def _draw_pixel(self, event: Event):
-        SIZE = self.root.pixel_size * (self.root.scale / 100)
-        GRID_X = floor((event.x - self.offset_x) / SIZE)
-        GRID_Y = floor((event.y - self.offset_y) / SIZE)
-
-        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
-        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
-
-
-        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                             (SIZE * GRID_Y) + self.offset_y, 
-                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                             fill=self.root.color, outline="", tags="pixel")
-
-        rgb = tuple(int(self.root.color.lstrip("#")[i:i+2],16) for i in (0, 2, 4))
-        self.image.putpixel(xy=(GRID_X, GRID_Y), value=rgb)
+        self.place_pixel(event=event,
+                         fill=self.root.color,
+                         delete=False,
+                         tag="pixel",
+                         commit_pixel=True)
 
 
     def _delete_pixel(self, event: Event):
-        SIZE = self.root.pixel_size * (self.root.scale / 100)
-        GRID_X = floor((event.x - self.offset_x) / SIZE)
-        GRID_Y = floor((event.y - self.offset_y) / SIZE)
-
-        self.create_rectangle((SIZE * GRID_X) + self.offset_x, 
-                             (SIZE * GRID_Y) + self.offset_y, 
-                             ((SIZE * GRID_X) + SIZE) + self.offset_x, 
-                             ((SIZE * GRID_Y) + SIZE) + self.offset_y,
-                             fill=self.root.bg, tags="pixel", outline="")
-
-        self.image.putpixel(xy=(GRID_X, GRID_Y), value=(255, 255, 255, 0))
+        self.place_pixel(event=event,
+                         fill=self.root.bg,
+                         delete=True,
+                         tag="pixel",
+                         commit_pixel=True)
 
 
     def _zoom(self, event: Event):
