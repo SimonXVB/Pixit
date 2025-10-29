@@ -159,11 +159,12 @@ class MainCanvas(Canvas):
 
     def _display_pointer_location(self, event: Event):
         self.delete("pointer")
-        self.place_pixel(event=event,
-                         fill=self.root.color,
-                         delete=False,
-                         tag="pointer",
-                         commit_pixel=False)
+        if not self.root.is_selecting:
+            self.place_pixel(event=event,
+                            fill=self.root.color,
+                            delete=False,
+                            tag="pointer",
+                            commit_pixel=False)
 
 
     def _draw_pixel(self, event: Event):
@@ -225,19 +226,20 @@ class MainCanvas(Canvas):
 
         self.move(ALL, x, y) # type: ignore
 
+
+    def _clear_select(self):
+        self.delete("select_outline")
+        self.selected_area = {}
+
+
     def _select(self, event: Event):
         self._clear_select()
 
-        START_X = self.start_x
-        START_Y = self.start_y
-        X = event.x
-        Y = event.y
-
         C_SIZE = self.root.canvas_size
-        SIZE = self.root.pixel_size * (self.root.scale / 100)
+        SCALE = self.root.scale / 100
 
-        x_coords = [floor((START_X - self.offset_x) / SIZE), floor((X - self.offset_x) / SIZE)] # [top x, bottom x]
-        y_coords = [floor((START_Y - self.offset_y) / SIZE), floor((Y - self.offset_y) / SIZE)] # [top y, bottom y]
+        x_coords = [floor((self.start_x - self.offset_x) / SCALE), floor((event.x - self.offset_x) / SCALE)] # [top x, bottom x]
+        y_coords = [floor((self.start_y - self.offset_y) / SCALE), floor((event.y - self.offset_y) / SCALE)] # [top y, bottom y]
 
         if x_coords[1] < x_coords[0]:
             x_coords[0], x_coords[1] = x_coords[1], x_coords[0]
@@ -264,17 +266,22 @@ class MainCanvas(Canvas):
             "bottom_y": y_coords[1]
         }
 
-        self.create_rectangle((x_coords[0] * SIZE) + self.offset_x,
-                        (y_coords[0] * SIZE) + self.offset_y, 
-                        ((x_coords[1] * SIZE) + self.offset_x) + SIZE, 
-                        ((y_coords[1] * SIZE) + self.offset_y) + SIZE,
-                        outline="red", tags="select_outline", width=3)
-
-        
-    def _clear_select(self):
-        self.delete("select_outline")
-        self.selected_area = {}
+        self.create_rectangle((x_coords[0] * SCALE) + self.offset_x,
+                              (y_coords[0] * SCALE) + self.offset_y, 
+                              ((x_coords[1] * SCALE) + self.offset_x) + SCALE, 
+                              ((y_coords[1] * SCALE) + self.offset_y) + SCALE,
+                              outline="black", tags="select_outline", width=2)
 
 
     def _delete_selected(self, event: Event):
-        pass
+        SIZE_X = self.selected_area["bottom_x"] - self.selected_area["top_x"]
+        SIZE_Y = self.selected_area["bottom_y"] - self.selected_area["top_y"]
+
+        for i in range(SIZE_Y + 1):
+            for j in range(SIZE_X + 1):
+                try:
+                    self.loaded_image[self.selected_area["top_x"] + j, self.selected_area["top_y"] + i] = (255, 255, 255, 0) # type: ignore
+                except IndexError:
+                    pass
+        
+        self.scale_image()
