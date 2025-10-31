@@ -335,6 +335,18 @@ class MainCanvas(Canvas):
         self.start_x = event.x
         self.start_y = event.y
 
+        COORDS = self.coords(self.pasted_area) # type: ignore
+        BBOX = self.bbox(self.pasted_area) # type: ignore
+
+        WIDTH = BBOX[2] -  BBOX[0]
+        HEIGHT = BBOX[3] -  BBOX[1]
+
+        WORLD_X = (COORDS[0] - (WIDTH / 2)) - self.offset_x
+        WORLD_Y = (COORDS[1] - (HEIGHT / 2)) - self.offset_y
+
+        if WORLD_X + X < WIDTH * -1 or WORLD_X + WIDTH + X > self.scaled_image.width + WIDTH: return
+        if WORLD_Y + Y < HEIGHT * -1 or WORLD_Y + HEIGHT + Y > self.scaled_image.height + HEIGHT: return
+
         self.move("placement_box", X, Y) # type: ignore
 
 
