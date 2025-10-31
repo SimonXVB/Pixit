@@ -48,14 +48,13 @@ class Main(Tk):
         if color != None and self.main_canvas:
             self.bg = color
             button.configure(text=color)
-            self.main_canvas.configure(background=color)
+            self.main_canvas.set_bg_color()
 
 
     def toggle_grid(self, button: ttk.Button):
         self.show_grid = not self.show_grid
 
         button.configure(text=f"grid: {self.show_grid}")
-        self.main_canvas.toggle_grid()
     
 
     def set_shape(self, x: StringVar):

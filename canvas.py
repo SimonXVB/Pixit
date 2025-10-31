@@ -49,6 +49,7 @@ class MainCanvas(Canvas):
 
         self.bind("<Control-c>", self._copy_selected)
         self.bind("<Control-v>", self._paste_selected)
+        self.bind("<Return>", self._commit_selected)
 
         self.image = Image.new("RGBA", (self.root.canvas_size[0], self.root.canvas_size[1]), "white")
         self.loaded_image = self.image.load()
@@ -87,10 +88,29 @@ class MainCanvas(Canvas):
             self.delete("pixel")
 
 
+    def set_bg_color(self):
+        self.configure(background=self.root.bg)
+        self.itemconfig("bounding", fill=self.root.bg)
+
+
+    def _init_bounding_box(self):
+        self.delete("bounding")
+
+        CANVAS_SIZE = self.root.canvas_size
+        SCALE = self.root.scale / 100
+
+        self.create_rectangle(((0 * SCALE) + self.offset_x, 
+                               (0 * SCALE) + self.offset_y, 
+                               ((CANVAS_SIZE[0]) * SCALE) + self.offset_x, 
+                               ((CANVAS_SIZE[1]) * SCALE) + self.offset_y), 
+                               fill="blue", outline="red", tags="bounding")
+        self.tag_raise(self.image_item, "bounding")
+
+
     def _load_image(self):
         SCALE = self.root.scale / 100
 
-        self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[0] * SCALE)), Image.Resampling.NEAREST) # type: ignore
+        self.scaled_image = self.image.resize((int(self.root.canvas_size[0] * SCALE), int(self.root.canvas_size[1] * SCALE)), Image.Resampling.NEAREST) # type: ignore
         self.photo_image = ImageTk.PhotoImage(self.scaled_image)
         self.itemconfig(self.image_item, image=self.photo_image)
 
@@ -101,8 +121,9 @@ class MainCanvas(Canvas):
 
         self.image = new_image
         self.loaded_image = self.image.load()
-        self._load_image()
 
+        self._load_image()
+        
 
     def place_pixel(self, event: Event, fill: str, tag: str, delete: bool, commit_pixel:bool):
         SCALE = self.root.scale / 100
@@ -136,13 +157,6 @@ class MainCanvas(Canvas):
                         self.loaded_image[START_X + j, START_Y + i] = rgb # type: ignore
                     except IndexError:
                         pass
-        
-
-    def toggle_grid(self):
-        if self.root.show_grid:
-            self.itemconfig("grid_el", state="normal")
-        else:
-            self.itemconfig("grid_el", state="hidden")
 
 
     def _display_pointer_location(self, event: Event):
@@ -288,38 +302,54 @@ class MainCanvas(Canvas):
         
     
     def _paste_selected(self, event: Event):
-        self.delete("placement_box")
-
         SCALE = self.root.scale / 100
         GRID_X = floor((event.x - self.offset_x) / SCALE)
         GRID_Y = floor((event.y - self.offset_y) / SCALE)
+
+        if GRID_X > self.root.canvas_size[0] - 1 or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_size[1] - 1 or GRID_Y < 0: return
+
+        self.delete("placement_box")
 
         SCALED_COPIED_AREA = self.copied_area.resize((int(self.copied_area.width * SCALE), int(self.copied_area.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
         self.copied_area_photo_image = ImageTk.PhotoImage(SCALED_COPIED_AREA)
 
         self.pasted_area = self.create_image(((GRID_X * SCALE) + self.offset_x, # type: ignore
                                               (GRID_Y * SCALE) + self.offset_y), 
-                                              image=self.copied_area_photo_image, tags="placement_box")
+                                              image=self.copied_area_photo_image, tags=["placement_box", "placement_image"])
 
         self.create_rectangle(((GRID_X * SCALE) - (SCALED_COPIED_AREA.width / 2) + self.offset_x, 
                                (GRID_Y * SCALE) - (SCALED_COPIED_AREA.height / 2) + self.offset_y, 
                                (GRID_X * SCALE) + (SCALED_COPIED_AREA.width / 2) + self.offset_x, 
                                (GRID_Y * SCALE) + (SCALED_COPIED_AREA.height / 2) + self.offset_y), 
-                               outline="red", width=2, tags="placement_box")
-
+                               outline="blue", width=2, tags="placement_box")
+        
         self.tag_bind("placement_box", "<Button-1>", self._get_starting_coords)
         self.tag_bind("placement_box", "<B1-Motion>", self._move_selected)
 
 
     def _move_selected(self, event: Event):
-        x = event.x - self.start_x
-        y = event.y - self.start_y
+        X = event.x - self.start_x
+        Y = event.y - self.start_y
 
         self.start_x = event.x
         self.start_y = event.y
 
-        self.move("placement_box", x, y) # type: ignore
+        self.move("placement_box", X, Y) # type: ignore
 
 
-    def _commit_selected(self):
-        pass
+    def _commit_selected(self, event: Event):
+        SCALE = self.root.scale / 100
+
+        X = self.coords(self.pasted_area)[0] # type: ignore
+        HALF_X = (self.bbox(self.pasted_area)[2] - self.bbox(self.pasted_area)[0]) / 2 # type: ignore
+
+        Y = self.coords(self.pasted_area)[1] # type: ignore
+        HALF_Y = (self.bbox(self.pasted_area)[1] - self.bbox(self.pasted_area)[3]) / 2 # type: ignore
+        
+        self.image.paste(self.copied_area, (int(((X - HALF_X) - self.offset_x) / SCALE), int(((Y + HALF_Y) - self.offset_y) / SCALE))) # type: ignore
+
+        self.pasted_area = None
+        self.delete("placement_box")
+
+        self._load_image()
