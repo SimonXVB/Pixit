@@ -1,7 +1,7 @@
 from tkinter import * # type: ignore
 from tkinter import colorchooser, ttk
 from toolbar import Toolbar
-from canvas import MainCanvas
+from canvas import DrawingCanvas
 
 class Main(Tk):
     def __init__(self) -> None:
@@ -10,26 +10,24 @@ class Main(Tk):
         #window config
         self.title("Pixit")
         self.geometry("700x500")
-        self.minsize(450, 450)
+        self.minsize(700, 500)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
 
         #app data
         self.color: str = "#000000"
-        self.bg: str = "#0026FF"
-        self.is_deleting: bool = False
-        self.is_selecting: bool = False
+        self.bg_color: str = "#0026FF"
+        self.interaction_state: str = "draw"
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
-        self.shape: str = self.shape_options[0]
-        self.pixel_size = 100
-        self.canvas_size: list[int] = [1000, 1000]
+        self.current_shape: str = self.shape_options[0]
+        self.pixel_size: int = 100
+        self.canvas_width: int = 1000
+        self.canvas_height: int = 1000
         self.scale: int = 100
-        self.offsetX: float = 0
-        self.offsetY: float = 0
 
         self.toolbar = Toolbar(self)
-        self.main_canvas = MainCanvas(self)
+        self.drawing_canvas = DrawingCanvas(self)
 
         self.mainloop()
         
@@ -43,12 +41,12 @@ class Main(Tk):
 
 
     def set_bg_color(self, button: ttk.Button):
-        color: str | None = colorchooser.askcolor(initialcolor=self.bg)[1]
+        color: str | None = colorchooser.askcolor(initialcolor=self.bg_color)[1]
 
-        if color != None and self.main_canvas:
-            self.bg = color
+        if color != None:
+            self.bg_color = color
             button.configure(text=color)
-            self.main_canvas.set_bg_color()
+            self.drawing_canvas.update_bg_color()
 
 
     def toggle_grid(self, button: ttk.Button):
@@ -57,27 +55,23 @@ class Main(Tk):
         button.configure(text=f"grid: {self.show_grid}")
     
 
-    def set_shape(self, x: StringVar):
-        self.shape = str(x)
+    def set_shape(self, shape: StringVar):
+        self.shape = str(shape)
 
 
     def set_interaction_state(self, interaction: str):
-        if interaction == "delete":
-            self.is_deleting = not self.is_deleting
-            self.is_selecting = False
-        elif interaction == "select": 
-            self.is_selecting = not self.is_selecting
-            self.is_deleting = False
+        self.interaction_state = interaction
 
-        self.toolbar.delete_btn.configure(text=str(self.is_deleting))
-        self.toolbar.select_btn.configure(text=str(self.is_selecting))
+        self.toolbar.delete_btn.configure(text="True" if interaction == "delete" else "False")
+        self.toolbar.select_btn.configure(text="True" if interaction == "select" else "False")
 
 
-    def change_dimensions(self, pixel_size: int, canvas_size: list[int]):
+    def change_dimensions(self, pixel_size: int, width: int, height: int):
         self.pixel_size = pixel_size
-        self.canvas_size = canvas_size
+        self.canvas_width = width
+        self.canvas_height = height
 
-        self.main_canvas.resize_canvas()
+        self.drawing_canvas.resize_canvas()
 
 if __name__ == "__main__":
     Main()

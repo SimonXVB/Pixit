@@ -1,14 +1,14 @@
 from tkinter import * # type: ignore
 from tkinter import ttk
 from components.int_input import IntInput
-from typing import TYPE_CHECKING # <--don't like this
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from main import Main
 
 class Toolbar(ttk.Frame):
     def __init__(self, root: "Main") -> None:
-        super().__init__(master=root, height=50)
+        super().__init__(root, height=50)
 
         self.root = root
 
@@ -16,16 +16,16 @@ class Toolbar(ttk.Frame):
         self.grid_propagate(False)
         self.grid(sticky="NEWS", column=0, row=0)
 
-        self.color_btn = self._create_color_button(self, 0)
-        self.bg_color_btn = self._create_bg_color_button(self, 1)
-        self.delete_btn = self._create_delete_button(self, 2)
-        self.select_btn = self._create_select_button(self, 3)
-        self.grid_btn = self._create_grid_button(self, 4)
-        self.dimensions_btn = self._create_open_dimensions_button(self, 5)
-        self.shape_dd = self._create_shape_dropdown(self, 6)
+        self.color_btn = self._color_button(self, 0)
+        self.bg_color_btn = self._bg_color_button(self, 1)
+        self.delete_btn = self._toggle_delete_button(self, 2)
+        self.select_btn = self._toggle_select_button(self, 3)
+        self.grid_btn = self._toggle_grid_button(self, 4)
+        self.dimensions_btn = self._change_dimensions_button(self, 5)
+        self.shape_dd = self._shape_dropdown(self, 6)
 
 
-    def _create_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_color():
             self.root.set_color(button)
 
@@ -35,7 +35,7 @@ class Toolbar(ttk.Frame):
         return button
 
 
-    def _create_bg_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _bg_color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_bg_color():
             self.root.set_bg_color(button)
 
@@ -45,27 +45,31 @@ class Toolbar(ttk.Frame):
         return button
 
         
-    def _create_delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
-        def set_interaction_state():
-            self.root.set_interaction_state("delete")
+    def _toggle_delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+        def set_state():
+            self.root.set_interaction_state("delete" if self.root.interaction_state != "delete" else "draw")
 
-        button = ttk.Button(parent, text=str(self.root.is_deleting), width=10, command=set_interaction_state)
+        TEXT = "True" if self.root.interaction_state == "delete" else "False"
+
+        button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
 
 
-    def _create_select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
-        def set_interaction_state():
-            self.root.set_interaction_state("select")
+    def _toggle_select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+        def set_state():
+            self.root.set_interaction_state("select" if self.root.interaction_state != "select" else "draw")
 
-        button = ttk.Button(parent, text=str(self.root.is_selecting), width=10, command=set_interaction_state)
+        TEXT = "True" if self.root.interaction_state == "select" else "False"
+
+        button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
 
 
-    def _create_grid_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+    def _toggle_grid_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def toggle_grid():
             self.root.toggle_grid(button)
 
@@ -75,28 +79,16 @@ class Toolbar(ttk.Frame):
         return button
     
 
-    def _create_shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
-        selected = StringVar(parent, self.root.shape)
-
-        def set_shape(x: StringVar):
-            self.root.set_shape(x)
-
-        dropdown = ttk.OptionMenu(parent, selected, *self.root.shape_options, command=set_shape)
-        dropdown.grid(sticky="NSW", column=col, row=0)
-
-        return dropdown
-    
-
-    def _create_open_dimensions_button(self, parent: "Toolbar", col: int):
-        button = ttk.Button(parent, text="dimen", width=10, command=self._dimensions_toplevel)
+    def _change_dimensions_button(self, parent: "Toolbar", col: int):
+        button = ttk.Button(parent, text="dimen", width=10, command=self._open_change_dimensions_toplevel)
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
     
 
-    def _dimensions_toplevel(self):
+    def _open_change_dimensions_toplevel(self):
         def close_toplevel():
-            self.root.change_dimensions(int(size_input.get()), [int(coord_x_input.get()), int(coord_y_input.get())])
+            self.root.change_dimensions(int(size_input.get()), int(coord_x_input.get()), int(coord_y_input.get()))
             toplevel.destroy()
 
         toplevel = Toplevel(self.root, padx=10, pady=10)
@@ -104,7 +96,7 @@ class Toolbar(ttk.Frame):
         toplevel.resizable(False, False)
         toplevel.grab_set()
 
-        #place dimensions widgets
+        #place canvas size widgets
         dim_frame = ttk.Frame(toplevel)
         dim_frame.grid(row=0, column=0)
 
@@ -114,7 +106,7 @@ class Toolbar(ttk.Frame):
         coord_x_label = ttk.Label(dim_frame, text="X:")
         coord_x_label.grid(row=1, column=0)
 
-        coord_x_input = IntInput(dim_frame, str(self.root.canvas_size[0]))
+        coord_x_input = IntInput(dim_frame, str(self.root.canvas_width))
         coord_x_input.grid(row=1, column=1)
 
         cells_x_label = ttk.Label(dim_frame, text="Cells")
@@ -123,7 +115,7 @@ class Toolbar(ttk.Frame):
         coord_y_label = ttk.Label(dim_frame, text="Y:")
         coord_y_label.grid(row=2, column=0)
 
-        coord_y_input = IntInput(dim_frame, str(self.root.canvas_size[1]))
+        coord_y_input = IntInput(dim_frame, str(self.root.canvas_height))
         coord_y_input.grid(row=2, column=1)
 
         cells_y_label = ttk.Label(dim_frame, text="Cells")
@@ -147,3 +139,14 @@ class Toolbar(ttk.Frame):
         save_button.grid(row=2, column=1)
 
         toplevel.mainloop()
+
+    def _shape_dropdown(self, parent: "Toolbar", col: int) -> ttk.OptionMenu:
+        selected = StringVar(parent, self.root.current_shape)
+
+        def set_shape(shape: StringVar):
+            self.root.set_shape(shape)
+
+        dropdown = ttk.OptionMenu(parent, selected, *self.root.shape_options, command=set_shape)
+        dropdown.grid(sticky="NSW", column=col, row=0)
+
+        return dropdown
