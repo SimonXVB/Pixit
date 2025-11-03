@@ -18,6 +18,7 @@ class Main(Tk):
         self.color: str = "#000000"
         self.bg_color: str = "#0026FF"
         self.interaction_state: str = "draw"
+        self.prev_interaction_state: str = ""
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.current_shape: str = self.shape_options[0]
@@ -62,8 +63,10 @@ class Main(Tk):
     def set_interaction_state(self, interaction: str):
         self.interaction_state = interaction
 
-        self.toolbar.delete_btn.configure(text="True" if interaction == "delete" else "False")
-        self.toolbar.select_btn.configure(text="True" if interaction == "select" else "False")
+        self.toolbar.draw_btn.configure(text="DR: True" if interaction == "draw" else "DR: False")
+        self.toolbar.move_btn.configure(text="MV: True" if interaction == "move" else "MV: False")
+        self.toolbar.delete_btn.configure(text="DL: True" if interaction == "delete" else "DL: False")
+        self.toolbar.select_btn.configure(text="SL: True" if interaction == "select" else "SL: False")
 
 
     def change_dimensions(self, pixel_size: int, width: int, height: int):

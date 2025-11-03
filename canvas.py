@@ -32,24 +32,24 @@ class DrawingCanvas(Canvas):
         super().__init__(self.root, bg=self.root.bg_color, highlightthickness=0)
         self.grid(sticky="NESW", row=1, column=0)
         
-        self.bind("<Button-1>", self._perform_action_click)
-        self.bind("<B1-Motion>", self._perform_action_motion)
-        self.bind("<B1-ButtonRelease>", self._perform_action_up)
+        self.bind("<Button-1>", self._m1_down)
+        self.bind("<B1-Motion>", self._m1_motion)
+        self.bind("<B1-ButtonRelease>", self._mouse_up)
 
         self.bind("<Button-3>", self._delete_pixel)
         self.bind("<B3-Motion>", self._delete_pixel)
-        self.bind("<B3-ButtonRelease>", self._perform_action_up)
+        self.bind("<B3-ButtonRelease>", self._mouse_up)
 
-        self.bind("<Button-2>", self._get_starting_coords)
+        self.bind("<Button-2>", self._start_pan)
         self.bind("<B2-Motion>", self._pan)
-
-        self.bind("<MouseWheel>", self._zoom)
-        self.bind("<BackSpace>", self._delete_selected)
-        self.bind("<Motion>", self._display_pointer_location)
 
         self.bind("<Control-c>", self._copy_selected)
         self.bind("<Control-v>", self._paste_selected)
-        self.bind("<Return>", self._commit_selected)
+        self.bind("<Return>", self._commit_pasted)
+
+        self.bind("<MouseWheel>", self._zoom)
+        self.bind("<BackSpace>", self._delete_selected)
+        self.bind("<Motion>", self._mouse_motion)
 
         self.canvas_image = Image.new("RGBA", (self.root.canvas_width, self.root.canvas_height), "white")
         self.loaded_canvas_image = self.canvas_image.load()
@@ -58,7 +58,7 @@ class DrawingCanvas(Canvas):
         self.canvas_image_item = self.create_image((0,0), image=self.canvas_photo_image, anchor="nw") # type: ignore
 
 
-    def _perform_action_click(self, event: Event):
+    def _m1_down(self, event: Event):
         self.focus_set()
 
         if self.root.interaction_state == "draw":
@@ -66,23 +66,37 @@ class DrawingCanvas(Canvas):
         elif self.root.interaction_state == "delete":
             self._delete_pixel(event)
         elif self.root.interaction_state == "select":
-            self._get_starting_coords(event)
+            self._start_select(event)
+        elif self.root.interaction_state == "move":
+            self._start_pan(event)
+
+        if self.pasted_area:
+            CURRENT = self.find_withtag("current")
+            PLACEMENT_ID = self.find_withtag("placement_box")
+
+            if CURRENT[0] != PLACEMENT_ID[0] and CURRENT[0] != PLACEMENT_ID[1]:
+                self._commit_pasted(event)
 
 
-    def _perform_action_motion(self, event: Event):
+    def _m1_motion(self, event: Event):
         if self.root.interaction_state == "draw":
             self._draw_pixel(event)
         elif self.root.interaction_state == "delete":
             self._delete_pixel(event)
         elif self.root.interaction_state == "select":
             self._select(event)
+        elif self.root.interaction_state == "move":
+            self._pan(event)
 
 
-    def _perform_action_up(self, event: Event):
-        if self.root.interaction_state == "draw":
-            self._update_canvas_image()
-            self.delete("pointer")
-            self.delete("pixel")
+    def _mouse_up(self, event: Event):
+        self.delete("pointer")
+        self.delete("pixel")
+        self._update_canvas_image()
+
+
+    def _mouse_motion(self, event: Event):
+        self._display_pointer_location(event)
 
 
     def update_bg_color(self):
@@ -108,6 +122,9 @@ class DrawingCanvas(Canvas):
         
 
     def place_pixel(self, event: Event, fill: str, tag: str, delete: bool, commit_pixel:bool):
+        self._clear_pasted()
+        self._clear_select()
+
         SCALE = self.root.scale / 100
         GRID_X = floor((event.x - self.offset_x) / SCALE)
         GRID_Y = floor((event.y - self.offset_y) / SCALE)
@@ -195,15 +212,20 @@ class DrawingCanvas(Canvas):
         
 
     def _get_starting_coords(self, event: Event):
-        self._clear_select()
-
         self.start_x = event.x
         self.start_y = event.y
 
 
-    def _pan(self, event: Event):
+    def _start_pan(self, event: Event):
+        self._clear_select()
+        self._get_starting_coords(event)
+
+
+    def _pan(self, event: Event):        
         x = event.x - self.start_x
         y = event.y - self.start_y
+        
+        print(x,y)
 
         self.offset_x += x
         self.offset_y += y
@@ -217,6 +239,11 @@ class DrawingCanvas(Canvas):
     def _clear_select(self):
         self.delete("select_outline")
         self.selected_area = {}
+
+
+    def _start_select(self, event: Event):
+        self._clear_select()
+        self._get_starting_coords(event)
 
 
     def _select(self, event: Event):
@@ -280,8 +307,11 @@ class DrawingCanvas(Canvas):
                                                    self.selected_area["start_y"],
                                                    self.selected_area["end_x"],
                                                    self.selected_area["end_y"]))
-        
     
+        self._clear_pasted()
+        self._clear_select()
+        
+
     def _paste_selected(self, event: Event):
         SCALE = self.root.scale / 100
         GRID_X = floor((event.x - self.offset_x) / SCALE)
@@ -303,13 +333,23 @@ class DrawingCanvas(Canvas):
                                (GRID_Y * SCALE) - (SCALED_COPIED_AREA.height / 2) + self.offset_y, 
                                (GRID_X * SCALE) + (SCALED_COPIED_AREA.width / 2) + self.offset_x, 
                                (GRID_Y * SCALE) + (SCALED_COPIED_AREA.height / 2) + self.offset_y), 
-                               outline="blue", width=2, tags="placement_box")
+                               outline="blue", width=2, tags=["placement_box", "placement_outline"])
         
-        self.tag_bind("placement_box", "<Button-1>", self._get_starting_coords)
-        self.tag_bind("placement_box", "<B1-Motion>", self._move_selected)
+        self.tag_bind("placement_box", "<Button-1>", self._start_move_pasted)
+        self.tag_bind("placement_box", "<B1-Motion>", self._move_pasted)
+        self.tag_bind("placement_box", "<B1-ButtonRelease>", self._stop_move_pasted)
 
 
-    def _move_selected(self, event: Event):
+    def _start_move_pasted(self, event: Event):
+        self._clear_select()
+
+        self.root.prev_interaction_state = self.root.interaction_state
+        self.root.set_interaction_state("move")
+
+        self._get_starting_coords(event)
+
+
+    def _move_pasted(self, event: Event):
         X = event.x - self.start_x
         Y = event.y - self.start_y
 
@@ -331,7 +371,7 @@ class DrawingCanvas(Canvas):
         self.move("placement_box", X, Y) # type: ignore
 
 
-    def _commit_selected(self, event: Event):
+    def _commit_pasted(self, event: Event):
         SCALE = self.root.scale / 100
 
         X = self.coords(self.pasted_area)[0] # type: ignore
@@ -342,7 +382,13 @@ class DrawingCanvas(Canvas):
         
         self.canvas_image.paste(self.copied_area, (int(((X - HALF_X) - self.offset_x) / SCALE), int(((Y + HALF_Y) - self.offset_y) / SCALE))) # type: ignore
 
+        self._clear_pasted()
+        self._update_canvas_image()
+
+    def _clear_pasted(self):
         self.pasted_area = None
         self.delete("placement_box")
 
-        self._update_canvas_image()
+
+    def _stop_move_pasted(self, event: Event):
+        self.root.set_interaction_state(self.root.prev_interaction_state)

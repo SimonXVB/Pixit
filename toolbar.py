@@ -18,11 +18,15 @@ class Toolbar(ttk.Frame):
 
         self.color_btn = self._color_button(self, 0)
         self.bg_color_btn = self._bg_color_button(self, 1)
-        self.delete_btn = self._toggle_delete_button(self, 2)
-        self.select_btn = self._toggle_select_button(self, 3)
-        self.grid_btn = self._toggle_grid_button(self, 4)
-        self.dimensions_btn = self._change_dimensions_button(self, 5)
-        self.shape_dd = self._shape_dropdown(self, 6)
+
+        self.draw_btn = self._toggle_draw_button(self, 2)
+        self.move_btn = self._toggle_move_button(self,3)
+        self.delete_btn = self._toggle_delete_button(self, 4)
+        self.select_btn = self._toggle_select_button(self, 5)
+
+        self.grid_btn = self._toggle_grid_button(self, 6)
+        self.dimensions_btn = self._change_dimensions_button(self, 7)
+        self.shape_dd = self._shape_dropdown(self, 8)
 
 
     def _color_button(self, parent: "Toolbar", col: int) -> ttk.Button:
@@ -43,13 +47,37 @@ class Toolbar(ttk.Frame):
         button.grid(sticky="NSW", column=col, row=0)
 
         return button
+    
+
+    def _toggle_draw_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+        def set_state():
+            self.root.set_interaction_state("draw")
+
+        TEXT = "DR: True" if self.root.interaction_state == "draw" else "DR: False"
+
+        button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
+        button.grid(sticky="NSW", column=col, row=0)
+
+        return button
+
+
+    def _toggle_move_button(self, parent: "Toolbar", col: int) -> ttk.Button:
+        def set_state():
+            self.root.set_interaction_state("move")
+
+        TEXT = "MV: True" if self.root.interaction_state == "move" else "MV: False"
+
+        button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
+        button.grid(sticky="NSW", column=col, row=0)
+
+        return button
 
         
     def _toggle_delete_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_state():
-            self.root.set_interaction_state("delete" if self.root.interaction_state != "delete" else "draw")
+            self.root.set_interaction_state("delete")
 
-        TEXT = "True" if self.root.interaction_state == "delete" else "False"
+        TEXT = "DL: True" if self.root.interaction_state == "delete" else "DL: False"
 
         button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
         button.grid(sticky="NSW", column=col, row=0)
@@ -59,9 +87,9 @@ class Toolbar(ttk.Frame):
 
     def _toggle_select_button(self, parent: "Toolbar", col: int) -> ttk.Button:
         def set_state():
-            self.root.set_interaction_state("select" if self.root.interaction_state != "select" else "draw")
+            self.root.set_interaction_state("select")
 
-        TEXT = "True" if self.root.interaction_state == "select" else "False"
+        TEXT = "SL: True" if self.root.interaction_state == "select" else "SL: False"
 
         button = ttk.Button(parent, text=TEXT, width=10, command=set_state)
         button.grid(sticky="NSW", column=col, row=0)
