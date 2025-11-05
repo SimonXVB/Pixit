@@ -18,14 +18,14 @@ class Main(Tk):
         self.color: str = "#000000"
         self.bg_color: str = "#0026FF"
         self.interaction_state: str = "draw"
-        self.prev_interaction_state: str = ""
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.current_shape: str = self.shape_options[0]
         self.pixel_size: int = 100
         self.canvas_width: int = 1000
         self.canvas_height: int = 1000
-        self.scale: int = 100
+        self.scale: float = 1
+        self.baseline_scale: float = 0
 
         self.toolbar = Toolbar(self)
         self.drawing_canvas = DrawingCanvas(self)
