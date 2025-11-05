@@ -46,8 +46,9 @@ class Main(Tk):
 
         if color != None:
             self.bg_color = color
+            
             button.configure(text=color)
-            self.drawing_canvas.update_bg_color()
+            self.drawing_canvas.configure(bg=color)
 
 
     def toggle_grid(self, button: ttk.Button):

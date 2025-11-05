@@ -27,13 +27,11 @@ class DrawingCanvas(Canvas):
         self.root.baseline_scale = self.root.scale
 
         self.canvas_image = Image.new("RGBA", (self.root.canvas_width, self.root.canvas_height), "white")
-        self.loaded_canvas_image = self.canvas_image.load()
-        self.scaled_canvas_image = Image.new("RGBA", (int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), "white")
-        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_canvas_image)
-        self.canvas_image_item = self.create_image(((self.winfo_width() - self.scaled_canvas_image.width) / 2, (self.winfo_height() - self.scaled_canvas_image.height) / 2), image=self.canvas_photo_image, anchor="nw") # type: ignore
+        self.canvas_photo_image = ImageTk.PhotoImage(self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST)) # type: ignore
+        self.canvas_image_item = self.create_image(((self.winfo_width() - self.canvas_photo_image.width()) / 2, (self.winfo_height() - self.canvas_photo_image.height()) / 2), image=self.canvas_photo_image, anchor="nw") # type: ignore
 
-        self.offset_x: float = (self.winfo_width() - self.scaled_canvas_image.width) / 2
-        self.offset_y: float = (self.winfo_height() - self.scaled_canvas_image.height) / 2
+        self.offset_x: float = (self.winfo_width() - self.canvas_photo_image.width()) / 2
+        self.offset_y: float = (self.winfo_height() - self.canvas_photo_image.height()) / 2
     
         self.start_x: int = 0
         self.start_y: int = 0
@@ -104,25 +102,22 @@ class DrawingCanvas(Canvas):
         self._display_pointer_location(event)
 
 
-    def update_bg_color(self):
-        self.configure(bg=self.root.bg_color)
-    
-
     def _update_canvas_image(self):
-        self.loaded_canvas_image = self.canvas_image.load()
-        self.scaled_canvas_image = self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST) # type: ignore
-        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_canvas_image)
+        SCALED_IMAGE = self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST) # type: ignore
+
+        self.canvas_photo_image = ImageTk.PhotoImage(SCALED_IMAGE)
         self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
 
 
     def _update_scale(self):
         self.root.scale = (self.winfo_height() / self.root.canvas_height) * 0.95
         self.root.baseline_scale = self.root.scale
-        self.offset_x = (self.winfo_width() - self.scaled_canvas_image.width) / 2
-        self.offset_y = (self.winfo_height() - self.scaled_canvas_image.height) / 2
-        self.moveto(ALL, self.offset_x, self.offset_y)
 
         self._update_canvas_image()
+
+        self.offset_x = (self.winfo_width() - self.canvas_photo_image.width()) / 2
+        self.offset_y = (self.winfo_height() - self.canvas_photo_image.height()) / 2
+        self.moveto(ALL, self.offset_x, self.offset_y)
 
 
     def resize_canvas(self):
@@ -136,14 +131,14 @@ class DrawingCanvas(Canvas):
         
 
     def place_pixel(self, event: Event, fill: str, tag: str, delete: bool, commit_pixel:bool):
-        self._clear_pasted()
         self._clear_select()
+        self._clear_pasted()
 
         GRID_X = floor((event.x - self.offset_x) / self.root.scale)
         GRID_Y = floor((event.y - self.offset_y) / self.root.scale)
 
-        if GRID_X > self.root.canvas_width - 1 or GRID_X < 0: return
-        if GRID_Y > self.root.canvas_height - 1 or GRID_Y < 0: return
+        if GRID_X > self.root.canvas_width or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_height or GRID_Y < 0: return
 
         START_X = GRID_X - int(self.root.pixel_size / 2) if GRID_X - int(self.root.pixel_size / 2) > 0 else 0
         START_Y = GRID_Y - int(self.root.pixel_size / 2) if GRID_Y - int(self.root.pixel_size / 2) > 0 else 0
@@ -166,7 +161,7 @@ class DrawingCanvas(Canvas):
             for i in range(HEIGHT):
                 for j in range(WIDTH):
                     try:
-                        self.loaded_canvas_image[START_X + j, START_Y + i] = rgb # type: ignore
+                        self.canvas_image.load()[START_X + j, START_Y + i] = rgb # type: ignore
                     except IndexError:
                         pass
 
@@ -218,6 +213,7 @@ class DrawingCanvas(Canvas):
 
         if self.pasted_area:
             SCALED_COPIED_AREA = self.copied_area.resize((int(self.copied_area.width * SCALE), int(self.copied_area.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
+
             self.scaled_copied_area = ImageTk.PhotoImage(SCALED_COPIED_AREA)
             self.itemconfig(self.pasted_area, image=self.scaled_copied_area)
 
@@ -248,11 +244,6 @@ class DrawingCanvas(Canvas):
         self.move(ALL, x, y) # type: ignore
 
 
-    def _clear_select(self):
-        self.delete("select_outline")
-        self.selected_area = {}
-
-
     def _start_select(self, event: Event):
         self._clear_select()
         self._get_starting_coords(event)
@@ -260,6 +251,7 @@ class DrawingCanvas(Canvas):
 
     def _select(self, event: Event):
         self._clear_select()
+        self._clear_pasted()
 
         WIDTH = self.root.canvas_width
         HEIGHT = self.root.canvas_height
@@ -294,9 +286,14 @@ class DrawingCanvas(Canvas):
 
         self.create_rectangle((x_coords[0] * self.root.scale) + self.offset_x,
                               (y_coords[0] * self.root.scale) + self.offset_y, 
-                              ((x_coords[1] * self.root.scale) + self.offset_x) + self.root.scale, 
-                              ((y_coords[1] * self.root.scale) + self.offset_y) + self.root.scale,
+                              (x_coords[1] * self.root.scale) + self.offset_x, 
+                              (y_coords[1] * self.root.scale) + self.offset_y,
                               outline="black", tags="select_outline", width=2)
+        
+
+    def _clear_select(self):
+        self.delete("select_outline")
+        self.selected_area = {}
 
 
     def _delete_selected(self, event: Event):
@@ -306,10 +303,11 @@ class DrawingCanvas(Canvas):
         for i in range(SIZE_Y + 1):
             for j in range(SIZE_X + 1):
                 try:
-                    self.loaded_image[self.selected_area["start_x"] + j, self.selected_area["start_y"] + i] = (0, 0, 0, 0) # type: ignore
+                    self.canvas_image.load()[self.selected_area["start_x"] + j, self.selected_area["start_y"] + i] = (0, 0, 0, 0) # type: ignore
                 except IndexError:
                     pass
         
+        self._clear_select()
         self._update_canvas_image()
 
 
@@ -327,11 +325,11 @@ class DrawingCanvas(Canvas):
         GRID_X = floor((event.x - self.offset_x) / self.root.scale)
         GRID_Y = floor((event.y - self.offset_y) / self.root.scale)
 
-        if GRID_X > self.root.canvas_width - 1 or GRID_X < 0: return
-        if GRID_Y > self.root.canvas_height - 1 or GRID_Y < 0: return
+        if GRID_X > self.root.canvas_width or GRID_X < 0: return
+        if GRID_Y > self.root.canvas_height or GRID_Y < 0: return
 
         self.root.set_interaction_state("move")
-        self.delete("placement_box")
+        self._clear_pasted()
 
         SCALED_COPIED_AREA = self.copied_area.resize((int(self.copied_area.width * self.root.scale), int(self.copied_area.height * self.root.scale)), Image.Resampling.NEAREST) # type: ignore
         self.copied_area_photo_image = ImageTk.PhotoImage(SCALED_COPIED_AREA)
@@ -371,8 +369,8 @@ class DrawingCanvas(Canvas):
         WORLD_X = (COORDS[0] - (WIDTH / 2)) - self.offset_x
         WORLD_Y = (COORDS[1] - (HEIGHT / 2)) - self.offset_y
 
-        if WORLD_X + X < WIDTH * -1 or WORLD_X + WIDTH + X > self.scaled_canvas_image.width + WIDTH: return
-        if WORLD_Y + Y < HEIGHT * -1 or WORLD_Y + HEIGHT + Y > self.scaled_canvas_image.height + HEIGHT: return
+        if WORLD_X + X < WIDTH * -1 or WORLD_X + WIDTH + X > self.canvas_photo_image.width() + WIDTH: return
+        if WORLD_Y + Y < HEIGHT * -1 or WORLD_Y + HEIGHT + Y > self.canvas_photo_image.height() + HEIGHT: return
 
         self.move("placement_box", X, Y) # type: ignore
 
