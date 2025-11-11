@@ -1,8 +1,8 @@
 import time
 from tkinter import * # type: ignore
 from typing import TYPE_CHECKING
-from math import floor
-from PIL import Image, ImageTk
+from math import ceil, floor
+from PIL import Image, ImageTk, ImageDraw
 
 if TYPE_CHECKING:
     from main import Main
@@ -27,11 +27,12 @@ class DrawingCanvas(Canvas):
         self.root.baseline_scale = self.root.scale
 
         self.canvas_image = Image.new("RGBA", (self.root.canvas_width, self.root.canvas_height), "white")
-        self.canvas_photo_image = ImageTk.PhotoImage(self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST)) # type: ignore
-        self.canvas_image_item = self.create_image(((self.winfo_width() - self.canvas_photo_image.width()) / 2, (self.winfo_height() - self.canvas_photo_image.height()) / 2), image=self.canvas_photo_image, anchor="nw") # type: ignore
+        self.scaled_canvas_image = self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST) # type: ignore
+        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_canvas_image)
+        self.canvas_image_item = self.create_image((0, 0), image=self.canvas_photo_image, anchor="nw") # type: ignore
 
-        self.offset_x: float = (self.winfo_width() - self.canvas_photo_image.width()) / 2
-        self.offset_y: float = (self.winfo_height() - self.canvas_photo_image.height()) / 2
+        self.offset_x: float = 0
+        self.offset_y: float = 0
     
         self.start_x: int = 0
         self.start_y: int = 0
@@ -95,7 +96,9 @@ class DrawingCanvas(Canvas):
     def _mouse_up(self, event: Event):
         self.delete("pointer")
         self.delete("pixel")
-        self._update_canvas_image()
+
+        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_canvas_image)
+        self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
 
 
     def _mouse_motion(self, event: Event):
@@ -103,9 +106,9 @@ class DrawingCanvas(Canvas):
 
 
     def _update_canvas_image(self):
-        SCALED_IMAGE = self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST) # type: ignore
+        self.scaled_canvas_image = self.canvas_image.resize((int(self.root.canvas_width * self.root.scale), int(self.root.canvas_height * self.root.scale)), Image.Resampling.NEAREST)
 
-        self.canvas_photo_image = ImageTk.PhotoImage(SCALED_IMAGE)
+        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_canvas_image)
         self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
 
 
@@ -140,30 +143,29 @@ class DrawingCanvas(Canvas):
         if GRID_X > self.root.canvas_width or GRID_X < 0: return
         if GRID_Y > self.root.canvas_height or GRID_Y < 0: return
 
-        START_X = GRID_X - int(self.root.pixel_size / 2) if GRID_X - int(self.root.pixel_size / 2) > 0 else 0
-        START_Y = GRID_Y - int(self.root.pixel_size / 2) if GRID_Y - int(self.root.pixel_size / 2) > 0 else 0
+        START_X = GRID_X - floor(self.root.pixel_size / 2) if GRID_X - int(self.root.pixel_size / 2) > 0 else 0
+        START_Y = GRID_Y - floor(self.root.pixel_size / 2) if GRID_Y - int(self.root.pixel_size / 2) > 0 else 0
 
-        WIDTH = self.root.pixel_size if GRID_X - int(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_X - int(self.root.pixel_size / 2))
-        HEIGHT = self.root.pixel_size if GRID_Y - int(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_Y - int(self.root.pixel_size / 2))
+        WIDTH = self.root.pixel_size if GRID_X - floor(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_X - floor(self.root.pixel_size / 2))
+        HEIGHT = self.root.pixel_size if GRID_Y - floor(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_Y - floor(self.root.pixel_size / 2))
 
         END_X = START_X + WIDTH if START_X + WIDTH < self.root.canvas_width else self.root.canvas_width
         END_Y = START_Y + HEIGHT if START_Y + HEIGHT < self.root.canvas_height else self.root.canvas_height
 
-        self.create_rectangle((START_X * self.root.scale) + self.offset_x,
-                              (START_Y * self.root.scale) + self.offset_y,
-                              (END_X * self.root.scale) + self.offset_x,
-                              (END_Y * self.root.scale) + self.offset_y,
-                              fill=fill, outline="", tags=tag)
+        def normal_round(n):
+            if n - floor(n) < 0.5:
+                return floor(n)
+            return ceil(n)
+        
+        self.create_rectangle(int((START_X * self.root.scale)) + normal_round(self.offset_x),
+                              int((START_Y * self.root.scale)) + normal_round(self.offset_y),
+                              int((END_X * self.root.scale)) + normal_round(self.offset_x),
+                              int((END_Y * self.root.scale)) + normal_round(self.offset_y),
+                              fill=fill, outline=fill, tags=tag)
         
         if commit_pixel:
-            rgb = tuple(int(fill.lstrip("#")[i:i+2],16) for i in (0, 2, 4)) if not delete else (0, 0, 0, 0)
-
-            for i in range(HEIGHT):
-                for j in range(WIDTH):
-                    try:
-                        self.canvas_image.load()[START_X + j, START_Y + i] = rgb # type: ignore
-                    except IndexError:
-                        pass
+            ImageDraw.Draw(self.canvas_image).rectangle([(START_X, START_Y), (END_X, END_Y)], fill, outline=None)
+            ImageDraw.Draw(self.scaled_canvas_image).rectangle([(int(START_X * self.root.scale), int(START_Y * self.root.scale)), (int(END_X * self.root.scale), int(END_Y * self.root.scale))], fill, outline=None)
 
 
     def _display_pointer_location(self, event: Event):
@@ -171,7 +173,7 @@ class DrawingCanvas(Canvas):
         
         if self.root.interaction_state == "draw":
             self.place_pixel(event=event,
-                            fill=self.root.color,
+                            fill="red",
                             delete=False,
                             tag="pointer",
                             commit_pixel=False)
@@ -241,7 +243,7 @@ class DrawingCanvas(Canvas):
         self.start_x = event.x
         self.start_y = event.y
 
-        self.move(ALL, x, y) # type: ignore
+        self.move(ALL, x, y)
 
 
     def _start_select(self, event: Event):
