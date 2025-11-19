@@ -111,8 +111,6 @@ class DrawingCanvas(Canvas):
     def _update_canvas_image(self):
         width = int(self.root.pixel_size * self.root.scale) * self.root.canvas_width
 
-        print(width)
-
         self.scaled_main_image = self.main_image.resize((width , 
                                                          width), 
                                                          Image.Resampling.NEAREST)
@@ -149,43 +147,41 @@ class DrawingCanvas(Canvas):
         if GRID_X >= self.root.canvas_width or GRID_X < 0: return
         if GRID_Y >= self.root.canvas_height or GRID_Y < 0: return
 
-        START_X = GRID_X - floor(self.root.pixel_size / 2) if GRID_X - floor(self.root.pixel_size / 2) > 0 else 0
-        START_Y = GRID_Y - floor(self.root.pixel_size / 2) if GRID_Y - floor(self.root.pixel_size / 2) > 0 else 0
+        SCALED_PIXEL = self.scaled_main_image.width / self.root.canvas_width
+        SIZE = SCALED_PIXEL * self.root.pixel_size
 
-        WIDTH = self.root.pixel_size if GRID_X - floor(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_X - floor(self.root.pixel_size / 2))
-        HEIGHT = self.root.pixel_size if GRID_Y - floor(self.root.pixel_size / 2) > 0 else self.root.pixel_size + (GRID_Y - floor(self.root.pixel_size / 2))
+        start_x = (GRID_X - floor(self.root.pixel_size / 2)) * SCALED_PIXEL
+        start_y = (GRID_Y - floor(self.root.pixel_size / 2)) * SCALED_PIXEL
 
-        END_X = START_X + WIDTH if START_X + WIDTH < self.root.canvas_width else self.root.canvas_width
-        END_Y = START_Y + HEIGHT if START_Y + HEIGHT < self.root.canvas_height else self.root.canvas_height
+        end_x = (start_x + SIZE) - 1
+        end_y = (start_y + SIZE) - 1
 
-        size = self.scaled_main_image.width / self.root.canvas_width
+        if start_x < 0:
+            start_x = 0
+            end_x = (start_x + SIZE) - 1
+        if end_x + 1 > self.scaled_main_image.width:
+            start_x = start_x - (end_x + 1 - self.scaled_main_image.width)
+            end_x = (start_x + SIZE) - 1
 
-        scaled_sx = GRID_X * size
-        scaled_sy = GRID_Y * size
+        if start_y < 0:
+            start_y = 0
+            end_y = (start_y + SIZE) - 1
+        elif end_y + 1 > self.scaled_main_image.height:
+            start_y = start_y - (end_y + 1 - self.scaled_main_image.height)
+            end_y = (start_y + SIZE) - 1
 
-        scaled_ex = (GRID_X * size) + size - 1
-        scaled_ey = (GRID_Y * size) + size - 1
-
-        print(scaled_sx, scaled_ex)
-        
-        self.create_rectangle(scaled_sx + self.offset_x,
-                              scaled_sy + self.offset_y,
-                              scaled_ex + self.offset_x,
-                              scaled_ey + self.offset_y,
+        self.create_rectangle(start_x + self.offset_x,
+                              start_y + self.offset_y,
+                              end_x + self.offset_x,
+                              end_y + self.offset_y,
                               fill=fill, outline=fill, tags=tag)
         
         if commit_pixel:
-            ImageDraw.Draw(self.main_image).rectangle([START_X, START_Y, END_X - 1, END_Y - 1], fill, outline=None)
-            ImageDraw.Draw(self.scaled_main_image).rectangle([scaled_sx, scaled_sy, 
-                                                              scaled_ex, scaled_ey],
-                                                              fill, outline=None)
-        
-        print(int((START_X * self.root.scale)), (START_X * self.root.scale), self.scaled_main_image.width)
-        print(int((END_X * self.root.scale)), (END_X * self.root.scale), self.root.pixel_size * self.root.scale)
-        print((int((END_X * self.root.scale))) - int((START_X * self.root.scale)), (event.x - self.offset_x) / self.root.scale)
-        print(floor((event.x - self.offset_x) / (self.scaled_main_image.width / self.root.canvas_width)), GRID_X, (event.x - self.offset_x))
-        print("")
-        print("")
+            ImageDraw.Draw(self.scaled_main_image).rectangle([start_x, start_y, end_x, end_y], fill, outline=None)
+            ImageDraw.Draw(self.main_image).rectangle([ceil(start_x / SCALED_PIXEL), 
+                                                       ceil(start_y / SCALED_PIXEL), 
+                                                       ceil(end_x / SCALED_PIXEL) - 1, 
+                                                       ceil(end_y / SCALED_PIXEL) - 1], fill, outline=None)
 
     def _display_pointer_location(self, event: Event):
         self.delete("pointer")
@@ -235,8 +231,10 @@ class DrawingCanvas(Canvas):
             self.scaled_copied_area = ImageTk.PhotoImage(SCALED_COPIED_AREA)
             self.itemconfig(self.pasted_area, image=self.scaled_copied_area)
 
-        self._update_canvas_image()
         self.scale(ALL, event.x, event.y, SCALE / PREV_SCALE, SCALE / PREV_SCALE)
+        
+        self._update_canvas_image()
+        self._display_pointer_location(event)
 
 
     def _start_pan(self, event: Event):

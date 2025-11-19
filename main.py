@@ -21,7 +21,7 @@ class Main(Tk):
         self.show_grid: bool = True
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.current_shape: str = self.shape_options[0]
-        self.pixel_size: int = 1
+        self.pixel_size: int = 5
         self.canvas_width: int = 50
         self.canvas_height: int = 50
         self.scale: float = 1
