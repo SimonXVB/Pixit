@@ -25,21 +25,19 @@ class Main(Tk):
         self.canvas_width: int = 50
         self.canvas_height: int = 50
         self.scale: float = 1
-        self.baseline_scale: float = 0
+        self.baseline_scale: float = self.scale
 
         self.toolbar = Toolbar(self)
         self.drawing_canvas = DrawingCanvas(self)
 
         self.mainloop()
         
-
     def set_color(self, button: ttk.Button):
         color: str | None = colorchooser.askcolor(initialcolor=self.color)[1]
 
         if color != None:
             self.color = color
             button.configure(text=color)
-
 
     def set_bg_color(self, button: ttk.Button):
         color: str | None = colorchooser.askcolor(initialcolor=self.bg_color)[1]
@@ -50,16 +48,13 @@ class Main(Tk):
             button.configure(text=color)
             self.drawing_canvas.configure(bg=color)
 
-
     def toggle_grid(self, button: ttk.Button):
         self.show_grid = not self.show_grid
 
         button.configure(text=f"grid: {self.show_grid}")
     
-
     def set_shape(self, shape: StringVar):
         self.shape = str(shape)
-
 
     def set_interaction_state(self, interaction: str):
         self.interaction_state = interaction
@@ -68,7 +63,6 @@ class Main(Tk):
         self.toolbar.move_btn.configure(text="MV: True" if interaction == "move" else "MV: False")
         self.toolbar.delete_btn.configure(text="DL: True" if interaction == "delete" else "DL: False")
         self.toolbar.select_btn.configure(text="SL: True" if interaction == "select" else "SL: False")
-
 
     def change_dimensions(self, pixel_size: int, width: int, height: int):
         self.pixel_size = pixel_size
