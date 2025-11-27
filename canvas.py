@@ -34,8 +34,8 @@ class DrawingCanvas(Canvas):
         self.pasted_area = None #Canvas Image
 
         self.main_image = Image.new("RGBA", (self.root.canvas_width, self.root.canvas_height), "white")
-        self.scaled_main_image = self.main_image.resize((int(self.root.canvas_width * self.root.scale), 
-                                                         int(self.root.canvas_height * self.root.scale)), 
+        self.scaled_main_image = self.main_image.resize((self.root.canvas_width * self.root.scale, 
+                                                         self.root.canvas_height * self.root.scale), 
                                                          Image.Resampling.NEAREST)
         
         self.offset_x: float = (self.winfo_width() - self.scaled_main_image.width) / 2
@@ -104,8 +104,8 @@ class DrawingCanvas(Canvas):
         self._display_pointer_location(event)
 
     def _update_canvas_image(self):
-        self.scaled_main_image = self.main_image.resize((floor(self.root.scale) * self.root.canvas_width, 
-                                                         floor(self.root.scale) * self.root.canvas_height), 
+        self.scaled_main_image = self.main_image.resize((self.root.canvas_width * self.root.scale, 
+                                                         self.root.canvas_height * self.root.scale), 
                                                          Image.Resampling.NEAREST)
 
         self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_main_image)
@@ -238,8 +238,8 @@ class DrawingCanvas(Canvas):
 
         SCALE = self.root.scale
 
-        x = event.x - (event.x - self.offset_x) * (SCALE / PREV_SCALE)
-        y = event.y - (event.y - self.offset_y) * (SCALE / PREV_SCALE)
+        x = floor(event.x - (event.x - self.offset_x) * (SCALE / PREV_SCALE))
+        y = floor(event.y - (event.y - self.offset_y) * (SCALE / PREV_SCALE))
 
         if self.pasted_area:
             SCALED_COPIED_AREA = self.copied_area.resize((int(self.copied_area.width * SCALE), int(self.copied_area.height * SCALE)), Image.Resampling.NEAREST) # type: ignore
@@ -247,10 +247,13 @@ class DrawingCanvas(Canvas):
             self.scaled_copied_area = ImageTk.PhotoImage(SCALED_COPIED_AREA)
             self.itemconfig(self.pasted_area, image=self.scaled_copied_area)
 
+
         self._check_set_bounds(x, y)
+        self.moveto(ALL, self.offset_x, self.offset_y)
+        
         self._update_canvas_image()
         self._display_pointer_location(event)
-        self.moveto(ALL, self.offset_x, self.offset_y)
+
 
     def _start_pan(self, event: Event):
         self.start_x = event.x
@@ -259,8 +262,8 @@ class DrawingCanvas(Canvas):
         self._clear_select()
 
     def _pan(self, event: Event):     
-        x = self.offset_x + (event.x - self.start_x)
-        y = self.offset_y + (event.y - self.start_y)
+        x = floor(self.offset_x + (event.x - self.start_x))
+        y = floor(self.offset_y + (event.y - self.start_y))
 
         self._check_set_bounds(x, y)
         self.moveto(ALL, self.offset_x, self.offset_y)
