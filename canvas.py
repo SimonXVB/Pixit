@@ -48,10 +48,6 @@ class DrawingCanvas(Canvas):
         self.bind("<B1-Motion>", self._m1_motion)
         self.bind("<B1-ButtonRelease>", self._mouse_up)
 
-        self.bind("<Button-3>", self._delete_pixel)
-        self.bind("<B3-Motion>", self._delete_pixel)
-        self.bind("<B3-ButtonRelease>", self._mouse_up)
-
         self.bind("<Button-2>", self._start_pan)
         self.bind("<B2-Motion>", self._pan)
 
@@ -88,15 +84,14 @@ class DrawingCanvas(Canvas):
             self._draw_pixel(event)
         elif self.root.interaction_state == "delete":
             self._delete_pixel(event)
+            self._display_pointer_location(event)
         elif self.root.interaction_state == "select":
             self._select(event)
         elif self.root.interaction_state == "move":
             self._pan(event)
 
     def _mouse_up(self, event: Event):
-        self.delete("pointer")
         self.delete("pixel")
-
         self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_main_image)
         self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
 
@@ -126,7 +121,7 @@ class DrawingCanvas(Canvas):
         self.main_image = new_image
         self._update_canvas_image()
         
-    def place_pixel(self, event: Event, fill: str, tag: str, delete: bool, commit_pixel:bool):
+    def place_pixel(self, event: Event, tag: str, commit_pixel:bool):
         self._clear_select()
         self._clear_pasted()
 
@@ -154,43 +149,42 @@ class DrawingCanvas(Canvas):
         if end_y > self.scaled_main_image.width:
             end_y = self.scaled_main_image.width
 
-        self.create_rectangle(start_x + self.offset_x,
-                              start_y + self.offset_y,
-                              end_x + self.offset_x - 1,
-                              end_y + self.offset_y - 1,
-                              fill=fill, outline=fill, tags=tag)
+        if tag == "pointer" and self.root.interaction_state == "delete":
+            self.create_rectangle(start_x + self.offset_x,
+                                start_y + self.offset_y,
+                                end_x + self.offset_x - 1,
+                                end_y + self.offset_y - 1,
+                                fill="", outline=self.root.color, tags=tag)
+        else:
+            rect_fill = self.root.color if self.root.interaction_state != "delete" else self.root.bg_color
+
+            self.create_rectangle(start_x + self.offset_x,
+                    start_y + self.offset_y,
+                    end_x + self.offset_x - 1,
+                    end_y + self.offset_y - 1,
+                    fill=rect_fill, outline=rect_fill, tags=tag)
         
         if commit_pixel:
-            ImageDraw.Draw(self.scaled_main_image).rectangle([start_x, start_y, end_x - 1, end_y - 1], fill=fill)
+            img_fill = self.root.color if self.root.interaction_state != "delete" else "#ffffff00"
+
+            ImageDraw.Draw(self.scaled_main_image).rectangle([start_x, start_y, end_x - 1, end_y - 1], fill=img_fill)
             ImageDraw.Draw(self.main_image).rectangle([floor(start_x / self.root.scale), 
                                                        floor(start_y / self.root.scale), 
                                                        floor(end_x / self.root.scale) - 1, 
                                                        floor(end_y / self.root.scale) - 1], 
-                                                       fill=fill)
+                                                       fill=img_fill)
             
     def _display_pointer_location(self, event: Event):
         self.delete("pointer")
         
-        if self.root.interaction_state == "draw":
-            self.place_pixel(event=event,
-                            fill="red",
-                            tag="pointer",
-                            commit_pixel=False,
-                            delete=False)
+        if self.root.interaction_state == "draw" or self.root.interaction_state == "delete":
+            self.place_pixel(event=event, tag="pointer", commit_pixel=False)
 
     def _draw_pixel(self, event: Event):
-        self.place_pixel(event=event,
-                         fill=self.root.color,
-                         tag="pixel",
-                         commit_pixel=True,
-                         delete=False)
+        self.place_pixel(event=event, tag="pixel", commit_pixel=True)
 
     def _delete_pixel(self, event: Event):
-        self.place_pixel(event=event,
-                         fill=self.root.bg_color,
-                         tag="pixel",
-                         commit_pixel=True,
-                         delete=True)
+        self.place_pixel(event=event, tag="pixel", commit_pixel=True)
         
     def _check_set_bounds(self, x: float, y: float):
         if self.scaled_main_image.width < self.winfo_width():
@@ -250,7 +244,7 @@ class DrawingCanvas(Canvas):
 
         self._check_set_bounds(x, y)
         self.moveto(ALL, self.offset_x, self.offset_y)
-        
+
         self._update_canvas_image()
         self._display_pointer_location(event)
 
