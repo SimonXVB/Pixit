@@ -2,23 +2,31 @@ import pygame
 from sys import exit
 from canvas import Canvas
 
-pygame.init()
-window = pygame.display.set_mode((1280, 720), vsync=1)
-clock = pygame.time.Clock()
+class Main:
+    def __init__(self) -> None:
+        pygame.init()
 
-events = []
-canvas = Canvas(window)
+        self.window = pygame.display.set_mode((1280, 720), vsync=1)
+        self.clock = pygame.time.Clock()
+        self.canvas = Canvas(self.window)
 
-while True:
-    events = pygame.event.get()
+        #starts the event loop
+        self.event_loop()
 
-    for event in events:
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
+    def event_loop(self):
+        while True:
+            events = pygame.event.get()
 
-    canvas.event_poll(events)
-    canvas.update()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
 
-    pygame.display.update()
-    clock.tick(120)
+            self.canvas.event_poll(events)
+            self.canvas.update()
+
+            pygame.display.update()
+            self.clock.tick(120)
+
+if __name__ == "__main__":
+    Main()
