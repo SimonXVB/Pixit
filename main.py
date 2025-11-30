@@ -1,7 +1,7 @@
 from tkinter import * # type: ignore
 from tkinter import colorchooser, ttk
 from toolbar import Toolbar
-from canvas import DrawingCanvas
+from canvas1 import DrawingCanvas
 
 class Main(Tk):
     def __init__(self) -> None:
@@ -22,8 +22,8 @@ class Main(Tk):
         self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
         self.current_shape: str = self.shape_options[0]
         self.pixel_size: int = 5
-        self.canvas_width: int = 50
-        self.canvas_height: int = 50
+        self.canvas_width: int = 500
+        self.canvas_height: int = 500
         self.scale: float = 1
         self.baseline_scale: float = self.scale
 

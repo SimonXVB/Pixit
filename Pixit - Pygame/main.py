@@ -23,8 +23,9 @@ class Main:
                     exit()
 
             self.canvas.event_poll(events)
-            self.canvas.update()
 
+            #print(self.clock.get_fps())
+            
             pygame.display.update()
             self.clock.tick(120)
 

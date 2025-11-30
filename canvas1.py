@@ -1,5 +1,6 @@
 import time
 from tkinter import * # type: ignore
+from turtle import width
 from typing import TYPE_CHECKING
 from math import ceil, floor
 from PIL import Image, ImageTk, ImageDraw, ImageColor
@@ -23,7 +24,7 @@ class DrawingCanvas(Canvas):
 
         self.root = root
 
-        self.root.scale = floor(self.winfo_height() / self.root.canvas_height) - 1
+        self.root.scale = 1 if floor(self.winfo_height() / self.root.canvas_height) - 1 < 1 else floor(self.winfo_height() / self.root.canvas_height) - 1
         self.root.baseline_scale = self.root.scale
 
         self.start_x: int = 0
@@ -90,27 +91,58 @@ class DrawingCanvas(Canvas):
         elif self.root.interaction_state == "move":
             self._pan(event)
 
+    @ex_time
     def _mouse_up(self, event: Event):
         self.delete("pixel")
-        self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_main_image)
-        self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
 
     def _mouse_motion(self, event: Event):
         self._display_pointer_location(event)
 
-    def _update_canvas_image(self):
-        self.scaled_main_image = self.main_image.resize((self.root.canvas_width * self.root.scale, 
-                                                         self.root.canvas_height * self.root.scale), 
-                                                         Image.Resampling.NEAREST)
+    def _update_canvas(self):
+        width = self.root.canvas_width * self.root.scale
+        height = self.root.canvas_height * self.root.scale
+
+        crop_left = 0
+        crop_top = 0
+        crop_right = width
+        crop_bottom = height
+
+        coord_x = self.offset_x
+        coord_y = self.offset_y
+
+        if self.offset_x < 0:
+            crop_left = self.offset_x * -1
+            coord_x = 0
+
+        if self.offset_y < 0:
+            crop_top = self.offset_y * -1
+            coord_y = 0
+
+        if width + self.offset_x > self.winfo_width():
+            crop_right = width - ((width + self.offset_x) - self.winfo_width())
+
+        if height + self.offset_y > self.winfo_height():
+            crop_bottom = height - ((height + self.offset_y) - self.winfo_height())
+
+        cropped = self.main_image.crop((floor(crop_left / self.root.scale), 
+                                        floor(crop_top / self.root.scale), 
+                                        ceil(crop_right / self.root.scale), 
+                                        ceil(crop_bottom / self.root.scale)))
+        
+        print(floor(crop_left / self.root.scale), floor(crop_top / self.root.scale), ceil(crop_right / self.root.scale), ceil(crop_bottom / self.root.scale))
+        
+        self.scaled_main_image = cropped.resize((floor(crop_right - crop_left), 
+                                                 ceil(crop_bottom - crop_top)), 
+                                                 Image.Resampling.NEAREST)
 
         self.canvas_photo_image = ImageTk.PhotoImage(self.scaled_main_image)
-        self.itemconfig(self.canvas_image_item, image=self.canvas_photo_image)
+        self.canvas_image_item = self.create_image((coord_x, coord_y), image=self.canvas_photo_image, anchor="nw")
 
     def _update_scale(self):
-        self.root.scale = floor(self.winfo_height() / self.root.canvas_height) - 1
+        self.root.scale = 1 if floor(self.winfo_height() / self.root.canvas_height) - 1 < 1 else floor(self.winfo_height() / self.root.canvas_height) - 1
         self.root.baseline_scale = self.root.scale
 
-        self._update_canvas_image()
+        self._update_canvas()
 
     def resize_canvas(self):
         self._update_scale()
@@ -119,14 +151,14 @@ class DrawingCanvas(Canvas):
         new_image.paste(self.main_image, (0, 0))
 
         self.main_image = new_image
-        self._update_canvas_image()
+        self._update_canvas()
         
     def place_pixel(self, event: Event, tag: str, commit_pixel:bool):
         self._clear_select()
         self._clear_pasted()
 
-        GRID_X = floor((event.x - self.offset_x) / (self.scaled_main_image.width / self.root.canvas_width))
-        GRID_Y = floor((event.y - self.offset_y) / (self.scaled_main_image.height / self.root.canvas_height))
+        GRID_X = floor((event.x - self.offset_x) / self.root.scale)
+        GRID_Y = floor((event.y - self.offset_y) / self.root.scale)
 
         if GRID_X >= self.root.canvas_width or GRID_X < 0: return
         if GRID_Y >= self.root.canvas_height or GRID_Y < 0: return
@@ -220,12 +252,11 @@ class DrawingCanvas(Canvas):
     def _zoom(self, event: Event):
         self._clear_select()
 
-        ZOOM_INTERVAL = self.root.baseline_scale * 0.1
         PREV_SCALE = self.root.scale
 
-        if self.root.scale + ZOOM_INTERVAL <= self.root.baseline_scale * 3 and event.delta > 0:
+        if self.root.scale + 1 < 40 and event.delta > 0:
             self.root.scale = floor(self.root.scale) + 1
-        elif self.root.scale - ZOOM_INTERVAL >= self.root.baseline_scale * 0.05 and event.delta < 0:
+        elif self.root.scale - 1 > 0 and event.delta < 0:
             self.root.scale = floor(self.root.scale) - 1
         else:
             return
@@ -245,9 +276,8 @@ class DrawingCanvas(Canvas):
         self._check_set_bounds(x, y)
         self.moveto(ALL, self.offset_x, self.offset_y)
 
-        self._update_canvas_image()
+        self._update_canvas()
         self._display_pointer_location(event)
-
 
     def _start_pan(self, event: Event):
         self.start_x = event.x
@@ -262,8 +292,12 @@ class DrawingCanvas(Canvas):
         self._check_set_bounds(x, y)
         self.moveto(ALL, self.offset_x, self.offset_y)
 
+        self._update_canvas()
+
         self.start_x = event.x
         self.start_y = event.y
+
+
 
 
 
@@ -331,7 +365,7 @@ class DrawingCanvas(Canvas):
                     pass
         
         self._clear_select()
-        self._update_canvas_image()
+        self._update_canvas()
 
     def _copy_selected(self, event: Event):
         self.copied_area = self.main_image.crop((self.selected_area["start_x"],
@@ -405,7 +439,7 @@ class DrawingCanvas(Canvas):
         self.main_image.paste(self.copied_area, (int(((X - HALF_X) - self.offset_x) / self.root.scale), int(((Y + HALF_Y) - self.offset_y) / self.root.scale))) # type: ignore
 
         self._clear_pasted()
-        self._update_canvas_image()
+        self._update_canvas()
 
     def _clear_pasted(self):
         self.pasted_area = None
