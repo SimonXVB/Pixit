@@ -1,6 +1,6 @@
 import pygame
 from PIL import Image, ImageDraw
-from math import floor
+from math import ceil, floor
 import time
 
 def ex_time(func):
@@ -61,16 +61,82 @@ class Canvas:
     def update_canvas(self):
         pass
 
+    @ex_time
     def update(self, event=None):
-        crop_region = self.crop_canvas()
+        width = self.main_image.width * self.scale
+        height = self.main_image.height * self.scale
+
+        coord_x = self.offset_x
+        coord_y = self.offset_y
+
+        crop_left = 0
+        crop_top = 0
+        crop_right = width
+        crop_bottom = height
+
+        if self.offset_x < 0:
+            crop_left = self.offset_x * -1
+            coord_x = 0
+
+        if self.offset_y < 0:
+            crop_top = self.offset_y * -1
+            coord_y = 0
+
+        if width + self.offset_x > self.canvas.get_width():
+            crop_right = width - ((width + self.offset_x) - self.canvas.get_width())
+
+        if height + self.offset_y > self.canvas.get_height():
+            crop_bottom = height - ((height + self.offset_y) - self.canvas.get_height())
+
+        cropped = pygame.Surface((floor(crop_right - crop_left) / self.scale, ceil(crop_bottom - crop_top) / self.scale))
+        cropped.blit(self.pygame_main_image, (0, 0), (floor(crop_left / self.scale), 
+                                                      floor(crop_top / self.scale), 
+                                                      ceil(crop_right / self.scale), 
+                                                      ceil(crop_bottom / self.scale)))
+        self.pygame_scaled_image = pygame.transform.scale(cropped, (floor(crop_right - crop_left), ceil(crop_bottom - crop_top)))
 
         self.canvas.fill("green")
-        self.canvas.blit(self.pygame_scaled_image, (self.offset_x, self.offset_y), (crop_region["left"], crop_region["top"], crop_region["right"], crop_region["bottom"]))
-
+        self._check_set_bounds(self.offset_x, self.offset_y)
+        self.canvas.blit(self.pygame_scaled_image, (coord_x, coord_y))
+    
 
         if event: event()
 
         self.window.blit(self.canvas, (0, 0))
+
+    def _check_set_bounds(self, x: float, y: float):
+        width = self.main_image.width * self.scale
+        height = self.main_image.height * self.scale
+        
+        if width < self.canvas.get_width():
+            if (width / 2) * -1 < x < self.canvas.get_width() - (width / 2):
+                self.offset_x = x
+            elif x < (width / 2) * -1:
+                self.offset_x = (width / 2) * -1
+            elif x > self.canvas.get_width() - (width / 2):
+                self.offset_x = self.canvas.get_width() - (width / 2)
+        else:
+            if (self.canvas.get_width() / 2) - width < x < self.canvas.get_width() / 2:
+                self.offset_x = x
+            elif x < (self.canvas.get_width() / 2) - width:
+                self.offset_x = (self.canvas.get_width() / 2) - width
+            elif x > self.canvas.get_width() / 2:
+                self.offset_x = self.canvas.get_width() / 2
+
+        if height < self.canvas.get_height():
+            if (height / 2) * -1 < y < self.canvas.get_height() - (height / 2):
+                self.offset_y = y
+            elif y < (height / 2) * -1:
+                self.offset_y = (height / 2) * -1
+            elif y > self.canvas.get_height() - (height / 2):
+                self.offset_y = self.canvas.get_height() - (height / 2)
+        else:
+            if (self.canvas.get_height() / 2) - height < y < self.canvas.get_height() / 2:
+                self.offset_y = y
+            elif y < (self.canvas.get_height() / 2) - height:
+                self.offset_y = (self.canvas.get_height() / 2) - height
+            elif y > self.canvas.get_height() / 2:
+                self.offset_y = self.canvas.get_height() / 2
 
     def event_poll(self, events):
         for event in events:
@@ -119,13 +185,12 @@ class Canvas:
 
         self.update(draw)
 
-    @ex_time
     def zoom(self, event):
         global scale, offset_x, offset_y, scaled
 
         PREV_SCALE = self.scale
 
-        if event.y == 1 and floor(self.scale) <= 30:
+        if event.y == 1 and floor(self.scale) <= 100:
             self.scale = floor(self.scale + 1)
         elif event.y == -1 and floor(self.scale) > 1:
             self.scale = floor(self.scale - 1)
@@ -140,7 +205,6 @@ class Canvas:
         self.offset_x = x - (x - self.offset_x) * (SCALE / PREV_SCALE)
         self.offset_y = y - (y - self.offset_y) * (SCALE / PREV_SCALE)
 
-        self.pygame_scaled_image = pygame.transform.scale(self.pygame_main_image, (500 * self.scale, 500 * self.scale))
         self.update()
 
     def begin_pan(self, event):

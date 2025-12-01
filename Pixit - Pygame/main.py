@@ -6,7 +6,7 @@ class Main:
     def __init__(self) -> None:
         pygame.init()
 
-        self.window = pygame.display.set_mode((1280, 720), vsync=1)
+        self.window = pygame.display.set_mode((1820, 980), vsync=1)
         self.clock = pygame.time.Clock()
         self.canvas = Canvas(self.window)
 
