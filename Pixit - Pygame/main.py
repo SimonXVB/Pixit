@@ -27,7 +27,7 @@ class Main:
             #print(self.clock.get_fps())
             
             pygame.display.update()
-            self.clock.tick(120)
+            self.clock.tick(60)
 
 if __name__ == "__main__":
     Main()
