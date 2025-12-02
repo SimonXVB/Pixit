@@ -5,6 +5,7 @@ from canvas import Canvas
 class Main:
     def __init__(self) -> None:
         pygame.init()
+        pygame.display.set_caption("Pixit")
 
         self.window = pygame.display.set_mode((1820, 980), vsync=1)
         self.clock = pygame.time.Clock()
@@ -25,9 +26,9 @@ class Main:
             self.canvas.event_poll(events)
 
             #print(self.clock.get_fps())
-            
+
             pygame.display.update()
-            self.clock.tick(60)
+            self.clock.tick(120)
 
 if __name__ == "__main__":
     Main()

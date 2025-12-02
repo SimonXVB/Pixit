@@ -1,3 +1,4 @@
+from turtle import width
 import pygame
 from PIL import Image, ImageDraw
 from math import ceil, floor
@@ -31,17 +32,70 @@ class Canvas:
         self.pygame_main_image = pygame.image.fromstring(self.main_image.tobytes(), self.main_image.size, "RGBA")
         self.pygame_scaled_image = self.pygame_main_image
 
-        self.update()
-
-    @ex_time
-    def update(self, event=None):
-        coord_x = self.offset_x if self.offset_x > 0 else 0
-        coord_y = self.offset_y if self.offset_y > 0 else 0
-
         self.render_canvas()
 
+    def event_poll(self, events):
+        for event in events:
+            if event.type == pygame.MOUSEWHEEL:
+                self.zoom(event)
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
+                self.begin_pan(event)
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                self.place_pixel(event)
+            elif event.type == pygame.MOUSEMOTION and event.buttons == (0, 1, 0):
+                self.pan()
+            elif event.type == pygame.MOUSEMOTION and event.buttons == (1, 0, 0):
+                self.place_pixel(event)
+
+    def render_canvas(self):
+        pixel_offset_x = ((((self.offset_x * -1) / self.scale) - floor((self.offset_x * -1) / self.scale)) * self.scale) * -1
+        pixel_offset_y = ((((self.offset_y * -1) / self.scale) - floor((self.offset_y * -1) / self.scale)) * self.scale) * -1
+
+        x = self.offset_x if self.offset_x > 0 else pixel_offset_x
+        y = self.offset_y if self.offset_y > 0 else pixel_offset_y
+
+        canvas_width = self.main_image.width * self.scale
+        canvas_height = self.main_image.height * self.scale
+
+        #calculate cropping region of the original image
+        crop_left = 0
+        crop_top = 0
+        crop_right = self.main_image.width
+        crop_bottom = self.main_image.height
+
+        if self.offset_x < 0:
+            crop_left = floor((self.offset_x * -1) / self.scale)
+
+        if self.offset_y < 0:
+            crop_top = floor((self.offset_y * -1) / self.scale)
+
+        if canvas_width + self.offset_x > self.canvas.get_width():
+            crop_right = floor((canvas_width - ((canvas_width + self.offset_x) - self.canvas.get_width())) / self.scale)
+
+        if canvas_height + self.offset_y > self.canvas.get_height():
+            crop_bottom = floor((canvas_height - ((canvas_height + self.offset_y) - self.canvas.get_height())) / self.scale)
+
+        #calculate width of the cropped image (so the right/bottom side of the canvas doesn't get cut off when panning)
+        width = 0
+        height = 0
+
+        if (crop_right - crop_left == self.main_image.width and canvas_width + self.offset_x < self.canvas.get_width()) or canvas_width + self.offset_x < self.canvas.get_width():
+            width = crop_right - crop_left
+        else:
+            width = (crop_right - crop_left) + 1
+
+        if (crop_bottom - crop_top == self.main_image.height and canvas_height + self.offset_y < self.canvas.get_height()) or canvas_height + self.offset_y < self.canvas.get_height():
+            height = crop_bottom - crop_top
+        else:
+            height = (crop_bottom - crop_top) + 1
+
+        #crop, scale and render to screen
+        cropped_img = pygame.Surface((width, height))
+        cropped_img.blit(self.pygame_main_image, (0, 0), (crop_left, crop_top, crop_right + 1, crop_bottom + 1))
+        scaled_img = pygame.transform.scale(cropped_img, (width * self.scale, height * self.scale))
+
         self.canvas.fill("green")
-        self.canvas.blit(self.pygame_scaled_image, (coord_x, coord_y))
+        self.canvas.blit(scaled_img, (x, y))
         self.window.blit(self.canvas, (0, 0))
 
     def set_offset(self, x: float, y: float):
@@ -81,49 +135,6 @@ class Canvas:
             elif y > screen_height / 2:
                 self.offset_y = screen_height / 2
 
-    def render_canvas(self):
-        canvas_width = self.main_image.width * self.scale
-        canvas_height = self.main_image.height * self.scale
-
-        crop_left = 0
-        crop_top = 0
-        crop_right = canvas_width
-        crop_bottom = canvas_height
-
-        if self.offset_x < 0:
-            crop_left = self.offset_x * -1
-
-        if self.offset_y < 0:
-            crop_top = self.offset_y * -1
-
-        if canvas_width + self.offset_x > self.canvas.get_width():
-            crop_right = canvas_width - ((canvas_width + self.offset_x) - self.canvas.get_width())
-
-        if canvas_height + self.offset_y > self.canvas.get_height():
-            crop_bottom = canvas_height - ((canvas_height + self.offset_y) - self.canvas.get_height())
-
-        cropped = pygame.Surface((floor(crop_right - crop_left) / self.scale, 
-                                  ceil(crop_bottom - crop_top) / self.scale))
-        
-        cropped.blit(self.pygame_main_image, (0, 0), (floor(crop_left / self.scale), 
-                                                      floor(crop_top / self.scale), 
-                                                      ceil(crop_right / self.scale), 
-                                                      ceil(crop_bottom / self.scale)))
-        
-        self.pygame_scaled_image = pygame.transform.scale(cropped, (floor(crop_right - crop_left), 
-                                                                    ceil(crop_bottom - crop_top)))
-
-    def event_poll(self, events):
-        for event in events:
-            if event.type == pygame.MOUSEWHEEL:
-                self.zoom(event)
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
-                self.begin_pan(event)
-            elif event.type == pygame.MOUSEMOTION and event.buttons == (0, 1, 0):
-                self.pan()
-            elif event.type == pygame.MOUSEMOTION:
-                self.place_pixel(event)
-
     def place_pixel(self, event):
         GRID_X = floor((event.pos[0] - self.offset_x) / self.scale)
         GRID_Y = floor((event.pos[1] - self.offset_y) / self.scale)
@@ -143,22 +154,18 @@ class Canvas:
         if start_y < 0:
             start_y = 0
 
-        if end_x > self.pygame_scaled_image.get_width():
-            end_x = self.pygame_scaled_image.get_width()
+        if end_x > self.main_image.width * self.scale:
+            end_x = self.main_image.width * self.scale
 
-        if end_y > self.pygame_scaled_image.get_height():
-            end_y = self.pygame_scaled_image.get_height()
+        if end_y > self.main_image.height * self.scale:
+            end_y = self.main_image.height * self.scale
 
-        start = floor(self.pygame_scaled_image.get_width() / self.main_image.width) * GRID_X
-        end = floor(self.pygame_scaled_image.get_width() / self.main_image.width) * (GRID_X + 1)
+        width = end_x - start_x
+        height = end_y - start_y
 
-        def draw():
-            pygame.draw.rect(self.canvas, "blue", ((start_x + self.offset_x), 
-                                                   (start_y + self.offset_y), 
-                                                   end_x - start_x, 
-                                                   end_y - start_y))
+        pygame.draw.rect(self.pygame_main_image, "blue", (start_x / self.scale, start_y / self.scale, width / self.scale, height / self.scale))
 
-        self.update(draw)
+        self.render_canvas()
 
     def zoom(self, event):
         global scale, offset_x, offset_y, scaled
@@ -178,7 +185,7 @@ class Canvas:
         y = pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.offset_y) * (SCALE / PREV_SCALE)
 
         self.set_offset(x, y)
-        self.update()
+        self.render_canvas()
 
     def begin_pan(self, event):
         self.start_x = event.pos[0]
@@ -189,7 +196,7 @@ class Canvas:
         y = self.offset_y + (pygame.mouse.get_pos()[1] - self.start_y)
 
         self.set_offset(x, y)
-        self.update()
+        self.render_canvas()
 
         self.start_x = pygame.mouse.get_pos()[0]
         self.start_y = pygame.mouse.get_pos()[1]
