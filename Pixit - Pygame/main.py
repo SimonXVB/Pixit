@@ -9,7 +9,10 @@ class Main:
 
         self.window = pygame.display.set_mode((1820, 980), vsync=1)
         self.clock = pygame.time.Clock()
-        self.canvas = Canvas(self.window)
+        self.canvas = Canvas(main=self, window=self.window)
+
+        #app data
+        self.pixel_size = 5
 
         #starts the event loop
         self.event_loop()
