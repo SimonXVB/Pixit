@@ -11,8 +11,8 @@ class Main:
         self.pixel_size: int = 5
         self.scale: float = 1
         self.baseline_scale: float = self.scale
-        self.canvas_width: int = 250
-        self.canvas_height: int = 250
+        self.canvas_width: int = 50
+        self.canvas_height: int = 50
 
         #init
         self.window = pygame.display.set_mode((1820, 980), vsync=1)

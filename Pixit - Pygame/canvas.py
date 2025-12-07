@@ -19,6 +19,7 @@ class Canvas:
         self.main = main
         self.window = window
         self.canvas = pygame.Surface(pygame.display.get_surface().get_size())
+        self.temp_canvas = pygame.Surface(pygame.display.get_surface().get_size())
 
         self.main.scale = (self.canvas.get_height() / self.main.canvas_height) * 0.95
         self.main.baseline_scale = self.main.scale
@@ -29,8 +30,12 @@ class Canvas:
         self.start_x = 0
         self.start_y = 0
 
+        self.copied_area_coords = {"left": 0, "top": 0, "right": 0, "bottom": 0, "height": 0, "width": 0}
+        self.copied_area = None
+
         self.canvas_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height))
         self.canvas_surface.fill("white")
+        pygame.draw.rect(self.canvas_surface, "red", (10, 10, 10, 10))
 
         self.temp_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height), flags=pygame.SRCALPHA)
         self.temp_surface.fill((0, 0, 0, 0))
@@ -44,19 +49,27 @@ class Canvas:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
                 self.begin_pan(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                self.draw(event)
+                # self.draw(event)
+                self.begin_select(event)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 self.delete(event)
             elif event.type == pygame.MOUSEMOTION and event.buttons == (1, 0, 0):
-                self.cursor(event)
-                self.draw(event)
+                # self.cursor(event)
+                # self.draw(event)
+                self.select(event)
             elif event.type == pygame.MOUSEMOTION and event.buttons == (0, 1, 0):
                 self.pan()
             elif event.type == pygame.MOUSEMOTION and event.buttons == (0, 0, 1):
                 self.cursor(event)
                 self.delete(event)
             elif event.type == pygame.MOUSEMOTION:
-                self.cursor(event)
+                pass
+                #self.cursor(event)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self.copy()
+                elif event.key == pygame.K_v and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self.paste()
 
     def render_canvas(self):
         pixel_offset_x = ((((self.offset_x * -1) / self.main.scale) - floor((self.offset_x * -1) / self.main.scale)) * self.main.scale) * -1
@@ -107,6 +120,7 @@ class Canvas:
 
         self.canvas.fill("green")
         self.canvas.blit(scaled_surface, (x, y))
+        self.canvas.blit(self.temp_canvas, (0, 0))
         self.window.blit(self.canvas, (0, 0))
 
     def set_offset(self, x: float, y: float):
@@ -237,3 +251,64 @@ class Canvas:
 
         self.start_x = pygame.mouse.get_pos()[0]
         self.start_y = pygame.mouse.get_pos()[1]
+
+    def begin_select(self, event):
+        self.start_x = event.pos[0]
+        self.start_y = event.pos[1]
+
+    def select(self, event):
+        left = floor((self.start_x - self.offset_x) / self.main.scale)
+        top = floor((self.start_y - self.offset_y) / self.main.scale)
+        right = floor((event.pos[0] - self.offset_x) / self.main.scale)
+        bottom = floor((event.pos[1] - self.offset_y) / self.main.scale)
+
+        if left < 0:
+            left = 0
+        
+        if top < 0:
+            top = 0
+        
+        if right > self.main.canvas_width:
+            right = self.main.canvas_width
+        
+        if bottom > self.main.canvas_height:
+            bottom = self.main.canvas_height
+
+        if right < left:
+            left, right = right, left
+
+        if bottom < top:
+            top, bottom = bottom, top
+
+        width = right - left
+        height = bottom - top
+
+        self.copied_area_coords = {
+            "left": left,
+            "top": top,
+            "right": right,
+            "bottom": bottom,
+            "width": width,
+            "height": height
+        }
+
+        self.temp_surface.fill((0, 0, 0, 0))
+        pygame.draw.rect(self.temp_surface, (0, 245, 53, 50), (left, top, width, height))
+        self.render_canvas()
+
+    def copy(self):
+        self.copied_area = pygame.Surface((self.copied_area_coords["width"], self.copied_area_coords["height"]))
+        self.copied_area.blit(self.canvas_surface, (0, 0), (self.copied_area_coords["left"], 
+                                                            self.copied_area_coords["top"], 
+                                                            self.copied_area_coords["right"], 
+                                                            self.copied_area_coords["bottom"]))
+    
+    def paste(self):
+        if self.copied_area == None: return
+
+        x = floor((pygame.mouse.get_pos()[0] - self.offset_x) / self.main.scale) - floor(self.copied_area_coords["width"] / 2)
+        y = floor((pygame.mouse.get_pos()[1] - self.offset_y) / self.main.scale) - floor(self.copied_area_coords["height"] / 2)
+
+        self.temp_surface.blit(self.copied_area, (x, y))
+        self.render_canvas()
+        
