@@ -1,6 +1,6 @@
 import pygame
 from typing import TYPE_CHECKING
-from math import floor
+from math import ceil, floor
 import time
 
 if TYPE_CHECKING:
@@ -14,14 +14,20 @@ def ex_time(func):
         print(e-s)
     return wrapper
 
+def normal_round(n):
+    if n - floor(n) < 0.5:
+        return floor(n)
+    return ceil(n)
+
 class Canvas:
     def __init__(self, main: "Main", window: pygame.Surface) -> None:
         self.main = main
         self.window = window
-        self.canvas = pygame.Surface(pygame.display.get_surface().get_size())
-        self.temp_canvas = pygame.Surface(pygame.display.get_surface().get_size())
+        self.base_layer = pygame.Surface(pygame.display.get_surface().get_size())
+        self.top_layer = pygame.Surface(pygame.display.get_surface().get_size(), flags=pygame.SRCALPHA)
+        self.top_layer.fill((0, 0, 0, 0))
 
-        self.main.scale = (self.canvas.get_height() / self.main.canvas_height) * 0.95
+        self.main.scale = (self.base_layer.get_height() / self.main.canvas_height) * 0.95
         self.main.baseline_scale = self.main.scale
 
         self.offset_x = 0
@@ -78,8 +84,8 @@ class Canvas:
         x = self.offset_x if self.offset_x > 0 else pixel_offset_x
         y = self.offset_y if self.offset_y > 0 else pixel_offset_y
 
-        canvas_width = self.canvas_surface.get_width() * self.main.scale
-        canvas_height = self.canvas_surface.get_height() * self.main.scale
+        canvas_width = floor(self.canvas_surface.get_width() * self.main.scale)
+        canvas_height = floor(self.canvas_surface.get_height() * self.main.scale)
 
         #calculate cropping region of the original image
         crop_left = 0
@@ -93,20 +99,20 @@ class Canvas:
         if self.offset_y < 0:
             crop_top = floor((self.offset_y * -1) / self.main.scale)
 
-        if canvas_width + self.offset_x > self.canvas.get_width():
-            crop_right = floor((canvas_width - ((canvas_width + self.offset_x) - self.canvas.get_width())) / self.main.scale)
+        if canvas_width + self.offset_x > self.base_layer.get_width():
+            crop_right = floor((canvas_width - ((canvas_width + self.offset_x) - self.base_layer.get_width())) / self.main.scale)
 
-        if canvas_height + self.offset_y > self.canvas.get_height():
-            crop_bottom = floor((canvas_height - ((canvas_height + self.offset_y) - self.canvas.get_height())) / self.main.scale)
+        if canvas_height + self.offset_y > self.base_layer.get_height():
+            crop_bottom = floor((canvas_height - ((canvas_height + self.offset_y) - self.base_layer.get_height())) / self.main.scale)
 
         #calculate width of the cropped image (so the right/bottom side of the canvas doesn't get cut off when panning)
         width = (crop_right - crop_left) + 1
         height = (crop_bottom - crop_top) + 1
 
-        if (crop_right - crop_left == self.canvas_surface.get_width() and canvas_width + self.offset_x < self.canvas.get_width()) or canvas_width + self.offset_x < self.canvas.get_width():
+        if (crop_right - crop_left == self.canvas_surface.get_width() and canvas_width + self.offset_x < self.base_layer.get_width()) or canvas_width + self.offset_x < self.base_layer.get_width():
             width = crop_right - crop_left
 
-        if (crop_bottom - crop_top == self.canvas_surface.get_height() and canvas_height + self.offset_y < self.canvas.get_height()) or canvas_height + self.offset_y < self.canvas.get_height():
+        if (crop_bottom - crop_top == self.canvas_surface.get_height() and canvas_height + self.offset_y < self.base_layer.get_height()) or canvas_height + self.offset_y < self.base_layer.get_height():
             height = crop_bottom - crop_top
 
         #crop, scale and render to screen
@@ -118,17 +124,17 @@ class Canvas:
         cropped_surface.blit(combined_surface, (0, 0), (crop_left, crop_top, crop_right + 1, crop_bottom + 1))
         scaled_surface = pygame.transform.scale(cropped_surface, (width * self.main.scale, height * self.main.scale))
 
-        self.canvas.fill("green")
-        self.canvas.blit(scaled_surface, (x, y))
-        self.canvas.blit(self.temp_canvas, (0, 0))
-        self.window.blit(self.canvas, (0, 0))
+        self.base_layer.fill("green")
+        self.base_layer.blit(scaled_surface, (x, y))
+        self.window.blit(self.base_layer, (0, 0))
+        self.window.blit(self.top_layer, (0, 0))
 
     def set_offset(self, x: float, y: float):
         canvas_width = self.canvas_surface.get_width() * self.main.scale
         canvas_height = self.canvas_surface.get_height() * self.main.scale
 
-        screen_width = self.canvas.get_width()
-        screen_height = self.canvas.get_height()
+        screen_width = self.base_layer.get_width()
+        screen_height = self.base_layer.get_height()
         
         if canvas_width < screen_width:
             if (canvas_width / 2) * -1 < x < screen_width - (canvas_width / 2):
@@ -223,7 +229,7 @@ class Canvas:
         PREV_SCALE = self.main.scale
         SCALE_INTERVAL = self.main.baseline_scale * 0.05
 
-        if event.y == 1 and self.main.scale <= self.main.baseline_scale * 3:
+        if event.y == 1 and self.main.scale <= self.main.baseline_scale * 10:
             self.main.scale = self.main.scale + SCALE_INTERVAL
         elif event.y == -1 and self.main.scale > self.main.baseline_scale * 0.1:
             self.main.scale = self.main.scale - SCALE_INTERVAL
@@ -232,8 +238,8 @@ class Canvas:
 
         SCALE = self.main.scale
 
-        x = pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.offset_x) * (SCALE / PREV_SCALE)
-        y = pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.offset_y) * (SCALE / PREV_SCALE)
+        x = floor(pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.offset_x) * (SCALE / PREV_SCALE))
+        y = floor(pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.offset_y) * (SCALE / PREV_SCALE))
 
         self.set_offset(x, y)
         self.render_canvas()
@@ -259,8 +265,8 @@ class Canvas:
     def select(self, event):
         left = floor((self.start_x - self.offset_x) / self.main.scale)
         top = floor((self.start_y - self.offset_y) / self.main.scale)
-        right = floor((event.pos[0] - self.offset_x) / self.main.scale)
-        bottom = floor((event.pos[1] - self.offset_y) / self.main.scale)
+        right = ceil((event.pos[0] - self.offset_x) / self.main.scale)
+        bottom = ceil((event.pos[1] - self.offset_y) / self.main.scale)
 
         if left < 0:
             left = 0
@@ -292,8 +298,11 @@ class Canvas:
             "height": height
         }
 
-        self.temp_surface.fill((0, 0, 0, 0))
-        pygame.draw.rect(self.temp_surface, (0, 245, 53, 50), (left, top, width, height))
+        self.top_layer.fill((0, 0, 0, 0))
+        pygame.draw.rect(self.top_layer, (0, 98, 255, 85), (ceil(left * self.main.scale) + self.offset_x, 
+                                                            ceil(top * self.main.scale) + self.offset_y, 
+                                                            ceil(width * self.main.scale), 
+                                                            ceil(height * self.main.scale)))
         self.render_canvas()
 
     def copy(self):
@@ -311,4 +320,3 @@ class Canvas:
 
         self.temp_surface.blit(self.copied_area, (x, y))
         self.render_canvas()
-        
