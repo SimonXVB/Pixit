@@ -1,75 +1,42 @@
-from tkinter import * # type: ignore
-from tkinter import colorchooser, ttk
-from toolbar import Toolbar
-from canvas1 import DrawingCanvas
+import pygame
+from sys import exit
+from canvas import Canvas
 
-class Main(Tk):
+class Main:
     def __init__(self) -> None:
-        super().__init__()
-
-        #window config
-        self.title("Pixit")
-        self.geometry("700x500")
-        self.minsize(700, 500)
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
+        pygame.init()
+        pygame.display.set_caption("Pixit")
 
         #app data
-        self.color: str = "#000000"
-        self.bg_color: str = "#0026FF"
-        self.interaction_state: str = "draw"
-        self.show_grid: bool = True
-        self.shape_options: list[str] = ["none", "triangle", "square", "circle", "hexagon"]
-        self.current_shape: str = self.shape_options[0]
         self.pixel_size: int = 5
-        self.canvas_width: int = 500
-        self.canvas_height: int = 500
         self.scale: float = 1
         self.baseline_scale: float = self.scale
+        self.canvas_width: int = 250
+        self.canvas_height: int = 250
 
-        self.toolbar = Toolbar(self)
-        self.drawing_canvas = DrawingCanvas(self)
+        #init
+        self.window = pygame.display.set_mode((1820, 980), vsync=1)
+        self.clock = pygame.time.Clock()
+        self.canvas = Canvas(main=self, window=self.window)
 
-        self.mainloop()
-        
-    def set_color(self, button: ttk.Button):
-        color: str | None = colorchooser.askcolor(initialcolor=self.color)[1]
+        #starts the event loop
+        self.event_loop()
 
-        if color != None:
-            self.color = color
-            button.configure(text=color)
+    def event_loop(self):
+        while True:
+            events = pygame.event.get()
 
-    def set_bg_color(self, button: ttk.Button):
-        color: str | None = colorchooser.askcolor(initialcolor=self.bg_color)[1]
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
 
-        if color != None:
-            self.bg_color = color
-            
-            button.configure(text=color)
-            self.drawing_canvas.configure(bg=color)
+            self.canvas.event_poll(events)
 
-    def toggle_grid(self, button: ttk.Button):
-        self.show_grid = not self.show_grid
+            #print(self.clock.get_fps())
 
-        button.configure(text=f"grid: {self.show_grid}")
-    
-    def set_shape(self, shape: StringVar):
-        self.shape = str(shape)
-
-    def set_interaction_state(self, interaction: str):
-        self.interaction_state = interaction
-
-        self.toolbar.draw_btn.configure(text="DR: True" if interaction == "draw" else "DR: False")
-        self.toolbar.move_btn.configure(text="MV: True" if interaction == "move" else "MV: False")
-        self.toolbar.delete_btn.configure(text="DL: True" if interaction == "delete" else "DL: False")
-        self.toolbar.select_btn.configure(text="SL: True" if interaction == "select" else "SL: False")
-
-    def change_dimensions(self, pixel_size: int, width: int, height: int):
-        self.pixel_size = pixel_size
-        self.canvas_width = width
-        self.canvas_height = height
-
-        self.drawing_canvas.resize_canvas()
+            pygame.display.update()
+            self.clock.tick(120)
 
 if __name__ == "__main__":
     Main()
