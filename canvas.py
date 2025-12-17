@@ -65,9 +65,12 @@ class Canvas:
 
     def mouse_down(self, event):
         if event.button == 1:
-            self.temp_surface.fill((0, 0, 0, 0))
-            self.render_canvas()
-            self.select.begin_select(event)
+            if self.select.paste_box and self.select.paste_box.check_mouse_collision():
+                self.select.paste_box.begin_move()
+            else:
+                self.temp_surface.fill((0, 0, 0, 0))
+                self.render_canvas()
+                self.select.begin_select(event)
             #self.draw.draw(event)
         elif event.button == 2:
             self.temp_surface.fill((0, 0, 0, 0))
@@ -78,7 +81,11 @@ class Canvas:
 
     def mouse_motion(self, event):
         if event.buttons == (1, 0, 0):
-            self.select.select(event)
+            if self.select.paste_box and self.select.paste_box.check_mouse_collision():
+                self.select.paste_box.move()
+                self.render_canvas()
+            else:
+                self.select.select(event)
             # self.draw.cursor(event)
             # self.draw.draw(event)
         elif event.buttons == (0, 1, 0):
@@ -91,7 +98,7 @@ class Canvas:
             #self.cursor(event)
 
         if self.select.paste_box:
-            self.select.paste_box.collision()
+            self.select.paste_box.check_mouse_collision()
 
     def key_down(self, event):
         if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:

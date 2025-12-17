@@ -70,32 +70,60 @@ class Select:
                                                                    self.copied_area_coords["bottom"]))
     
     def paste(self):
-        self.paste_box = PasteBox(self, self.canvas, self.main)
+        self.paste_box = PasteBox(self, self.canvas, self.main, self.copied_area)
         self.canvas.render_canvas()
 
 class PasteBox:
-    def __init__(self, select: "Select", canvas: "canvas.Canvas", main: "main.Main") -> None:
+    def __init__(self, select: "Select", canvas: "canvas.Canvas", main: "main.Main", copied_area) -> None:
         self.select = select
         self.canvas = canvas
         self.main = main
 
-        self.pos_x = self.canvas.offset_x + (self.canvas.offset_x - pygame.mouse.get_pos()[0])
-        self.pos_y = self.canvas.offset_y + (self.canvas.offset_y - pygame.mouse.get_pos()[1])
-        
+        self.copied_area = copied_area
+        self.scaled_area = pygame.transform.scale(self.copied_area, (self.copied_area.get_width() * self.main.scale, self.copied_area.get_height() * self.main.scale))
         self.prev_scale = self.main.scale
+
+        # position without offset/scaling
+        self.pos_x = self.canvas.offset_x - pygame.mouse.get_pos()[0]
+        self.pos_y = self.canvas.offset_y - pygame.mouse.get_pos()[1]
+
+        # position with offset/scaling
+        self.canvas_x = 0
+        self.canvas_y = 0
+
+        self.start_x = 0
+        self.start_y = 0
 
         self.update()
 
     def update(self):
-        if not self.select.copied_area: return
-
         self.canvas.top_layer.fill((0, 0, 0, 0))
 
-        x = self.canvas.offset_x - (self.pos_x * (self.main.scale / self.prev_scale))
-        y = self.canvas.offset_y - (self.pos_y * (self.main.scale / self.prev_scale))
-        scaled = pygame.transform.scale(self.select.copied_area, (self.select.copied_area.get_width() * self.main.scale, self.select.copied_area.get_height() * self.main.scale))
-        
-        self.canvas.top_layer.blit(scaled, (x, y))
+        self.canvas_x = self.canvas.offset_x - (self.pos_x * (self.main.scale / self.prev_scale))
+        self.canvas_y = self.canvas.offset_y - (self.pos_y * (self.main.scale / self.prev_scale))
 
-    def collision(self):
-        pass
+        self.scaled_area = pygame.transform.scale(self.copied_area, (self.copied_area.get_width() * self.main.scale, self.copied_area.get_height() * self.main.scale))
+
+
+        self.canvas.top_layer.blit(self.scaled_area, (self.canvas_x, self.canvas_y))
+        pygame.draw.rect(self.canvas.top_layer, "green", (self.canvas_x, self.canvas_y, self.scaled_area.get_width(), self.scaled_area.get_height()), 1)
+
+    def check_mouse_collision(self):
+        rect = self.scaled_area.get_rect(topleft = (self.canvas_x, self.canvas_y))
+        return rect.collidepoint(pygame.mouse.get_pos())
+    
+    def begin_move(self):
+        self.start_x = pygame.mouse.get_pos()[0]
+        self.start_y = pygame.mouse.get_pos()[1]
+    
+    def move(self):
+        x = (self.start_x - pygame.mouse.get_pos()[0]) * (self.prev_scale / self.main.scale)
+        y = (self.start_y - pygame.mouse.get_pos()[1]) * (self.prev_scale / self.main.scale)
+
+        self.start_x = pygame.mouse.get_pos()[0]
+        self.start_y = pygame.mouse.get_pos()[1]
+
+        self.pos_x += x
+        self.pos_y += y
+
+        self.update()
