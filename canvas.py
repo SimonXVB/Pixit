@@ -45,6 +45,7 @@ class Canvas:
         self.canvas_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height))
         self.canvas_surface.fill("white")
         pygame.draw.rect(self.canvas_surface, "red", (10, 10, 10, 10))
+        pygame.draw.rect(self.canvas_surface, "green", (25, 25, 10, 10))
 
         self.temp_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height), flags=pygame.SRCALPHA)
         self.temp_surface.fill((0, 0, 0, 0))
@@ -54,8 +55,6 @@ class Canvas:
     def event_poll(self, events):
         for event in events:
             if event.type == pygame.MOUSEWHEEL:
-                self.top_layer.fill((0, 0, 0, 0))
-                self.temp_surface.fill((0, 0, 0, 0))
                 self.zoom_pan.zoom(event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_down(event)
@@ -90,6 +89,9 @@ class Canvas:
         else:
             pass
             #self.cursor(event)
+
+        if self.select.paste_box:
+            self.select.paste_box.collision()
 
     def key_down(self, event):
         if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -143,6 +145,9 @@ class Canvas:
         cropped_surface = pygame.Surface((width, height))
         cropped_surface.blit(combined_surface, (0, 0), (crop_left, crop_top, crop_right + 1, crop_bottom + 1))
         scaled_surface = pygame.transform.scale(cropped_surface, (width * self.main.scale, height * self.main.scale))
+
+        if self.select.paste_box:
+            self.select.paste_box.update()
 
         self.base_layer.fill("green")
         self.base_layer.blit(scaled_surface, (x, y))
