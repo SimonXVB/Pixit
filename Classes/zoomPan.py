@@ -3,17 +3,18 @@ from math import floor
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import main
     import canvas
 
 class ZoomPan:
-    def __init__(self, canvas: "canvas.Canvas", main: "main.Main") -> None:
-        self.main = main
+    def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
+        self.start_x = 0
+        self.start_y = 0
+
     def set_offset(self, x: int, y: int):
-        canvas_width = self.main.canvas_width * self.main.scale
-        canvas_height = self.main.canvas_height * self.main.scale
+        canvas_width = self.canvas.canvas_width * self.canvas.scale
+        canvas_height = self.canvas.canvas_height * self.canvas.scale
 
         screen_width = self.canvas.base_layer.get_width()
         screen_height = self.canvas.base_layer.get_height()
@@ -49,20 +50,18 @@ class ZoomPan:
                 self.canvas.offset_y = int(screen_height / 2)
 
     def zoom(self, event):
-        PREV_SCALE = self.main.scale
-        SCALE_INTERVAL = self.main.baseline_scale * 0.05
+        PREV_SCALE = self.canvas.scale
+        SCALE_INTERVAL = self.canvas.baseline_scale * 0.05
 
-        if event.y == 1 and self.main.scale <= self.main.baseline_scale * 10:
-            self.main.scale = self.main.scale + SCALE_INTERVAL
-        elif event.y == -1 and self.main.scale > self.main.baseline_scale * 0.1:
-            self.main.scale = self.main.scale - SCALE_INTERVAL
+        if event.y == 1 and self.canvas.scale <= self.canvas.baseline_scale * 10:
+            self.canvas.scale = self.canvas.scale + SCALE_INTERVAL
+        elif event.y == -1 and self.canvas.scale > self.canvas.baseline_scale * 0.1:
+            self.canvas.scale = self.canvas.scale - SCALE_INTERVAL
         else:
             return
 
-        SCALE = self.main.scale
-
-        x = floor(pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.canvas.offset_x) * (SCALE / PREV_SCALE))
-        y = floor(pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.canvas.offset_y) * (SCALE / PREV_SCALE))
+        x = floor(pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.canvas.offset_x) * (self.canvas.scale / PREV_SCALE))
+        y = floor(pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.canvas.offset_y) * (self.canvas.scale / PREV_SCALE))
 
         self.set_offset(x, y)
         self.canvas.render_canvas()

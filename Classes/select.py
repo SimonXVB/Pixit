@@ -1,33 +1,30 @@
 import pygame
 from math import floor, ceil
 from typing import TYPE_CHECKING
+from Classes.pasteBox import PasteBox
 
 if TYPE_CHECKING:
-    import main
     import canvas
 
 class Select:
-    def __init__(self, canvas: "canvas.Canvas", main: "main.Main") -> None:
-        self.main = main
+    def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
         self.start_x = 0
         self.start_y = 0
 
-        self.copied_area_coords = {}
-        self.copied_area = None
-
-        self.paste_box = None
-
     def begin_select(self, event):
         self.start_x = event.pos[0]
         self.start_y = event.pos[1]
 
+        self.canvas.temp_surface.fill((0, 0, 0, 0))
+        self.canvas.render_canvas()
+
     def select(self, event):
-        left = floor((self.start_x - self.canvas.offset_x) / self.main.scale)
-        top = floor((self.start_y - self.canvas.offset_y) / self.main.scale)
-        right = ceil((event.pos[0] - self.canvas.offset_x) / self.main.scale)
-        bottom = ceil((event.pos[1] - self.canvas.offset_y) / self.main.scale)
+        left = floor((self.start_x - self.canvas.offset_x) / self.canvas.scale)
+        top = floor((self.start_y - self.canvas.offset_y) / self.canvas.scale)
+        right = ceil((event.pos[0] - self.canvas.offset_x) / self.canvas.scale)
+        bottom = ceil((event.pos[1] - self.canvas.offset_y) / self.canvas.scale)
 
         if right < left: 
             left, right = right, left
@@ -38,16 +35,16 @@ class Select:
         if left < 0: left = 0
         if top < 0: top = 0
         
-        if right > self.main.canvas_width: 
-            right = self.main.canvas_width
+        if right > self.canvas.canvas_width: 
+            right = self.canvas.canvas_width
 
-        if bottom > self.main.canvas_height: 
-            bottom = self.main.canvas_height
+        if bottom > self.canvas.canvas_height: 
+            bottom = self.canvas.canvas_height
 
         width = right - left
         height = bottom - top
 
-        self.copied_area_coords = {
+        self.canvas.copied_area_coords = {
             "left": left,
             "top": top,
             "right": right,
@@ -58,72 +55,16 @@ class Select:
 
         self.canvas.temp_surface.fill((0, 0, 0, 0))
         pygame.draw.rect(self.canvas.temp_surface, (0, 98, 255, 85), (left, top, width, height))
+        
         self.canvas.render_canvas()
 
     def copy(self):
-        self.copied_area = pygame.Surface((self.copied_area_coords["width"], 
-                                           self.copied_area_coords["height"]))
-        
-        self.copied_area.blit(self.canvas.canvas_surface, (0, 0), (self.copied_area_coords["left"], 
-                                                                   self.copied_area_coords["top"], 
-                                                                   self.copied_area_coords["right"], 
-                                                                   self.copied_area_coords["bottom"]))
+        self.canvas.copied_area = pygame.Surface((self.canvas.copied_area_coords["width"], self.canvas.copied_area_coords["height"]))
+        self.canvas.copied_area.blit(self.canvas.canvas_surface, (0, 0), (self.canvas.copied_area_coords["left"], 
+                                                                          self.canvas.copied_area_coords["top"], 
+                                                                          self.canvas.copied_area_coords["right"], 
+                                                                          self.canvas.copied_area_coords["bottom"]))
     
     def paste(self):
-        self.paste_box = PasteBox(self, self.canvas, self.main, self.copied_area)
+        self.canvas.paste_box = PasteBox(self.canvas)
         self.canvas.render_canvas()
-
-class PasteBox:
-    def __init__(self, select: "Select", canvas: "canvas.Canvas", main: "main.Main", copied_area) -> None:
-        self.select = select
-        self.canvas = canvas
-        self.main = main
-
-        self.copied_area = copied_area
-        self.scaled_area = pygame.transform.scale(self.copied_area, (self.copied_area.get_width() * self.main.scale, self.copied_area.get_height() * self.main.scale))
-        self.prev_scale = self.main.scale
-
-        # position without offset/scaling
-        self.pos_x = self.canvas.offset_x - pygame.mouse.get_pos()[0]
-        self.pos_y = self.canvas.offset_y - pygame.mouse.get_pos()[1]
-
-        # position with offset/scaling
-        self.canvas_x = 0
-        self.canvas_y = 0
-
-        self.start_x = 0
-        self.start_y = 0
-
-        self.update()
-
-    def update(self):
-        self.canvas.top_layer.fill((0, 0, 0, 0))
-
-        self.canvas_x = self.canvas.offset_x - (self.pos_x * (self.main.scale / self.prev_scale))
-        self.canvas_y = self.canvas.offset_y - (self.pos_y * (self.main.scale / self.prev_scale))
-
-        self.scaled_area = pygame.transform.scale(self.copied_area, (self.copied_area.get_width() * self.main.scale, self.copied_area.get_height() * self.main.scale))
-
-
-        self.canvas.top_layer.blit(self.scaled_area, (self.canvas_x, self.canvas_y))
-        pygame.draw.rect(self.canvas.top_layer, "green", (self.canvas_x, self.canvas_y, self.scaled_area.get_width(), self.scaled_area.get_height()), 1)
-
-    def check_mouse_collision(self):
-        rect = self.scaled_area.get_rect(topleft = (self.canvas_x, self.canvas_y))
-        return rect.collidepoint(pygame.mouse.get_pos())
-    
-    def begin_move(self):
-        self.start_x = pygame.mouse.get_pos()[0]
-        self.start_y = pygame.mouse.get_pos()[1]
-    
-    def move(self):
-        x = (self.start_x - pygame.mouse.get_pos()[0]) * (self.prev_scale / self.main.scale)
-        y = (self.start_y - pygame.mouse.get_pos()[1]) * (self.prev_scale / self.main.scale)
-
-        self.start_x = pygame.mouse.get_pos()[0]
-        self.start_y = pygame.mouse.get_pos()[1]
-
-        self.pos_x += x
-        self.pos_y += y
-
-        self.update()
