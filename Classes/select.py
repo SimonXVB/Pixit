@@ -10,15 +10,16 @@ class Select:
     def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
+        self.is_selected = False
+
         self.start_x = 0
         self.start_y = 0
 
     def begin_select(self, event):
+        self.clear_select()
+
         self.start_x = event.pos[0]
         self.start_y = event.pos[1]
-
-        self.canvas.temp_surface.fill((0, 0, 0, 0))
-        self.canvas.render_canvas()
 
     def select(self, event):
         left = floor((self.start_x - self.canvas.offset_x) / self.canvas.scale)
@@ -44,7 +45,7 @@ class Select:
         width = right - left
         height = bottom - top
 
-        self.canvas.copied_area_coords = {
+        self.canvas.select_coords = {
             "left": left,
             "top": top,
             "right": right,
@@ -58,13 +59,25 @@ class Select:
         
         self.canvas.render_canvas()
 
+    def clear_select(self):
+        self.canvas.select_coords = {}
+        self.canvas.temp_surface.fill((0, 0, 0, 0))
+        self.canvas.render_canvas()
+
     def copy(self):
-        self.canvas.copied_area = pygame.Surface((self.canvas.copied_area_coords["width"], self.canvas.copied_area_coords["height"]))
-        self.canvas.copied_area.blit(self.canvas.canvas_surface, (0, 0), (self.canvas.copied_area_coords["left"], 
-                                                                          self.canvas.copied_area_coords["top"], 
-                                                                          self.canvas.copied_area_coords["right"], 
-                                                                          self.canvas.copied_area_coords["bottom"]))
+        self.canvas.copied_area = pygame.Surface((self.canvas.select_coords["width"], self.canvas.select_coords["height"]))
+        self.canvas.copied_area.blit(self.canvas.canvas_surface, (0, 0), (self.canvas.select_coords["left"], 
+                                                                          self.canvas.select_coords["top"], 
+                                                                          self.canvas.select_coords["right"], 
+                                                                          self.canvas.select_coords["bottom"]))
     
     def paste(self):
         self.canvas.paste_box = PasteBox(self.canvas)
-        self.canvas.render_canvas()
+        self.clear_select()
+
+    def delete(self):
+        delete_area = pygame.Surface((self.canvas.select_coords["width"], self.canvas.select_coords["height"]))
+        delete_area.fill("white")
+
+        self.canvas.canvas_surface.blit(delete_area, (self.canvas.select_coords["left"], self.canvas.select_coords["top"]))
+        self.clear_select()

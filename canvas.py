@@ -47,7 +47,7 @@ class Canvas:
         self.offset_x = 0
         self.offset_y = 0
 
-        self.copied_area_coords = {}
+        self.select_coords = {}
         self.copied_area: "pygame.Surface | None" = None
         self.paste_box: "PasteBox | None" = None
 
@@ -81,6 +81,8 @@ class Canvas:
                 elif self.paste_box and self.paste_box.collision() == "copied_area":
                     self.paste_box.begin_move()
                 else:
+                    if self.paste_box:
+                        self.paste_box.commit_paste()
                     self.select.begin_select(event)
             #self.draw.draw(event)
         elif event.button == 2:
@@ -122,6 +124,12 @@ class Canvas:
         elif event.key == pygame.K_RETURN:
             if self.paste_box:
                 self.paste_box.commit_paste()
+        elif event.key == pygame.K_BACKSPACE:
+            if self.paste_box:
+                self.paste_box.clear_paste_box()
+
+            if self.select_coords:
+                self.select.delete()
 
     def render_canvas(self):
         pixel_offset_x = ((((self.offset_x * -1) / self.scale) - floor((self.offset_x * -1) / self.scale)) * self.scale) * -1
