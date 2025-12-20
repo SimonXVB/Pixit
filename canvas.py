@@ -76,7 +76,9 @@ class Canvas:
 
     def mouse_down(self, event):
         if event.button == 1:
-                if self.paste_box and self.paste_box.collision():
+                if self.paste_box and self.paste_box.collision() == "node":
+                    self.paste_box.begin_scale()
+                elif self.paste_box and self.paste_box.collision() == "copied_area":
                     self.paste_box.begin_move()
                 else:
                     self.select.begin_select(event)
@@ -90,7 +92,9 @@ class Canvas:
 
     def mouse_motion(self, event):
         if event.buttons == (1, 0, 0):
-            if self.paste_box and self.paste_box.is_moving:
+            if self.paste_box and self.paste_box.is_scaling:
+                self.paste_box.scale()
+            elif self.paste_box and self.paste_box.is_moving:
                 self.paste_box.move()
             else:
                 self.select.select(event)
@@ -108,6 +112,7 @@ class Canvas:
     def mouse_up(self):
         if self.paste_box:
             self.paste_box.stop_moving()
+            self.paste_box.stop_scaling()
 
     def key_down(self, event):
         if event.key == pygame.K_c and pygame.key.get_mods() & pygame.KMOD_CTRL:
