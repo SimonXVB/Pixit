@@ -12,7 +12,7 @@ class Main:
         self.canvas = Canvas(main=self)
         self.clock = pygame.time.Clock()
 
-        #starts the event loop
+        #start the event loop
         self.event_loop()
 
     def event_loop(self):

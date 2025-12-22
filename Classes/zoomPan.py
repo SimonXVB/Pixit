@@ -66,9 +66,9 @@ class ZoomPan:
         self.set_offset(x, y)
         self.canvas.render_canvas()
 
-    def begin_pan(self, event):
-        self.start_x = event.pos[0]
-        self.start_y = event.pos[1]
+    def begin_pan(self):
+        self.start_x = pygame.mouse.get_pos()[0]
+        self.start_y = pygame.mouse.get_pos()[1]
 
     def pan(self):
         x = self.canvas.offset_x + (pygame.mouse.get_pos()[0] - self.start_x)

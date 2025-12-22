@@ -1,8 +1,7 @@
 import pygame
-import time
 
 from typing import TYPE_CHECKING
-from math import ceil, floor
+from math import floor
 
 from Classes.select import Select
 from Classes.zoomPan import ZoomPan
@@ -12,23 +11,12 @@ if TYPE_CHECKING:
     from Classes.pasteBox import PasteBox
     from main import Main
 
-def ex_time(func):
-    def wrapper(*args, **kwargs) -> None:
-        s = time.time()
-        func(*args, **kwargs)
-        e = time.time()
-        print(e-s)
-    return wrapper
-
-def normal_round(n):
-    if n - floor(n) < 0.5:
-        return floor(n)
-    return ceil(n)
-
 class Canvas:
     def __init__(self, main: "Main") -> None:
         self.main = main
 
+        self.color = "#000000"
+        self.bg_color = "#ffffff"
         self.pixel_size: int = 5
         self.canvas_width: int = 50
         self.canvas_height: int = 50
@@ -86,10 +74,8 @@ class Canvas:
                     self.select.begin_select()
             #self.draw.draw(event)
         elif event.button == 2:
-            self.temp_surface.fill((0, 0, 0, 0))
-            self.zoom_pan.begin_pan(event)
+            self.zoom_pan.begin_pan()
         elif event.button == 3:
-            self.temp_surface.fill((0, 0, 0, 0))
             self.draw.delete(event)
 
     def mouse_motion(self, event):
