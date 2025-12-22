@@ -10,22 +10,20 @@ class Select:
     def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
-        self.is_selected = False
-
         self.start_x = 0
         self.start_y = 0
 
-    def begin_select(self, event):
+    def begin_select(self):
         self.clear_select()
 
-        self.start_x = event.pos[0]
-        self.start_y = event.pos[1]
+        self.start_x = pygame.mouse.get_pos()[0]
+        self.start_y = pygame.mouse.get_pos()[1]
 
-    def select(self, event):
+    def select(self):
         left = floor((self.start_x - self.canvas.offset_x) / self.canvas.scale)
         top = floor((self.start_y - self.canvas.offset_y) / self.canvas.scale)
-        right = ceil((event.pos[0] - self.canvas.offset_x) / self.canvas.scale)
-        bottom = ceil((event.pos[1] - self.canvas.offset_y) / self.canvas.scale)
+        right = ceil((pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale)
+        bottom = ceil((pygame.mouse.get_pos()[1] - self.canvas.offset_y) / self.canvas.scale)
 
         if right < left: 
             left, right = right, left
@@ -56,7 +54,6 @@ class Select:
 
         self.canvas.temp_surface.fill((0, 0, 0, 0))
         pygame.draw.rect(self.canvas.temp_surface, (0, 98, 255, 85), (left, top, width, height))
-        
         self.canvas.render_canvas()
 
     def clear_select(self):

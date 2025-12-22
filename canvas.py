@@ -83,7 +83,7 @@ class Canvas:
                 else:
                     if self.paste_box:
                         self.paste_box.commit_paste()
-                    self.select.begin_select(event)
+                    self.select.begin_select()
             #self.draw.draw(event)
         elif event.button == 2:
             self.temp_surface.fill((0, 0, 0, 0))
@@ -99,7 +99,7 @@ class Canvas:
             elif self.paste_box and self.paste_box.is_moving:
                 self.paste_box.move()
             else:
-                self.select.select(event)
+                self.select.select()
             # self.draw.cursor(event)
             # self.draw.draw(event)
         elif event.buttons == (0, 1, 0):
