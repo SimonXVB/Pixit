@@ -1,4 +1,5 @@
 import pygame
+import time
 
 from typing import TYPE_CHECKING
 from math import floor
@@ -6,6 +7,15 @@ from math import floor
 from Classes.select import Select
 from Classes.zoomPan import ZoomPan
 from Classes.draw import Draw
+from Classes.undoRedo import UndoRedo
+
+def ex_time(func):
+    def wrapper(*args, **kwargs) -> None:
+        s = time.time()
+        func(*args, **kwargs)
+        e = time.time()
+        print(e-s)
+    return wrapper
 
 if TYPE_CHECKING: 
     from Classes.pasteBox import PasteBox
@@ -24,6 +34,7 @@ class Canvas:
         self.draw = Draw(self)
         self.zoom_pan = ZoomPan(self)
         self.select = Select(self)
+        self.undo_redo = UndoRedo(self)
 
         self.base_layer = pygame.Surface(pygame.display.get_surface().get_size())
         self.top_layer = pygame.Surface(pygame.display.get_surface().get_size(), flags=pygame.SRCALPHA)
@@ -71,8 +82,8 @@ class Canvas:
                 else:
                     if self.paste_box:
                         self.paste_box.commit_paste()
-                    self.select.begin_select()
-            #self.draw.draw(event)
+                    #self.select.begin_select()
+                    self.draw.draw(event)
         elif event.button == 2:
             self.zoom_pan.begin_pan()
         elif event.button == 3:
@@ -85,9 +96,9 @@ class Canvas:
             elif self.paste_box and self.paste_box.is_moving:
                 self.paste_box.move()
             else:
-                self.select.select()
-            # self.draw.cursor(event)
-            # self.draw.draw(event)
+                #self.select.select()
+                self.draw.cursor(event)
+                self.draw.draw(event)
         elif event.buttons == (0, 1, 0):
             self.zoom_pan.pan()
         elif event.buttons == (0, 0, 1):
@@ -95,9 +106,11 @@ class Canvas:
             self.draw.delete(event)
         else:
             pass
-            #self.cursor(event)
+            self.draw.cursor(event)
         
     def mouse_up(self):
+        self.undo_redo.end_snapshot()
+
         if self.paste_box:
             self.paste_box.stop_moving()
             self.paste_box.stop_scaling()
@@ -107,6 +120,8 @@ class Canvas:
             self.select.copy()
         elif event.key == pygame.K_v and pygame.key.get_mods() & pygame.KMOD_CTRL:
             self.select.paste()
+        elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
+            self.undo_redo.undo()
         elif event.key == pygame.K_RETURN:
             if self.paste_box:
                 self.paste_box.commit_paste()
