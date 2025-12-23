@@ -10,16 +10,16 @@ class Select:
     def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
-        self.start_x = 0
-        self.start_y = 0
-
-    def begin_select(self):
-        self.clear_select()
-
-        self.start_x = pygame.mouse.get_pos()[0]
-        self.start_y = pygame.mouse.get_pos()[1]
+        self.start_x = None
+        self.start_y = None
 
     def select(self):
+        if not self.start_x or not self.start_y:
+            self.clear_select()
+
+            self.start_x = pygame.mouse.get_pos()[0]
+            self.start_y = pygame.mouse.get_pos()[1]
+
         left = floor((self.start_x - self.canvas.offset_x) / self.canvas.scale)
         top = floor((self.start_y - self.canvas.offset_y) / self.canvas.scale)
         right = ceil((pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale)
@@ -57,7 +57,10 @@ class Select:
         self.canvas.render_canvas()
 
     def clear_select(self):
+        self.start_x = None
+        self.start_y = None
         self.canvas.select_coords = {}
+
         self.canvas.temp_surface.fill((0, 0, 0, 0))
         self.canvas.render_canvas()
 
@@ -77,4 +80,10 @@ class Select:
         delete_area.fill("white")
 
         self.canvas.canvas_surface.blit(delete_area, (self.canvas.select_coords["left"], self.canvas.select_coords["top"]))
+
+        self.canvas.undo_redo.create_snapshot({"left": self.canvas.select_coords["left"],
+                                               "top": self.canvas.select_coords["top"],
+                                               "right": self.canvas.select_coords["right"],
+                                               "bottom": self.canvas.select_coords["bottom"]})
+
         self.clear_select()

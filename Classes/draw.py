@@ -58,7 +58,7 @@ class Draw:
         coords = self.get_pixel_coords(event)
 
         if coords:
-            self.canvas.undo_redo.compare_coords(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
+            self.canvas.undo_redo.set_snapshot_rect(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
 
             pygame.draw.rect(self.canvas.canvas_surface, "red", (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
             self.canvas.render_canvas()
@@ -67,5 +67,7 @@ class Draw:
         coords = self.get_pixel_coords(event)
 
         if coords:
+            self.canvas.undo_redo.set_snapshot_rect(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
+
             pygame.draw.rect(self.canvas.canvas_surface, "white", (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
             self.canvas.render_canvas()

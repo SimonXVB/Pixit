@@ -20,9 +20,10 @@ class UndoRedo:
 
         self.current_snapshot_coords = {}
 
-        self.undo_list: list = []
+        self.snapshots: list = []
+        self.redo_snapshots: list = []
 
-    def compare_coords(self, left, top, right, bottom):
+    def set_snapshot_rect(self, left, top, right, bottom):
         if not self.current_snapshot_coords:
             self.current_snapshot_coords = {"left": left,
                                             "top": top,
@@ -39,37 +40,39 @@ class UndoRedo:
                                         "right": new_right,
                                         "bottom": new_bottom}
 
-    def end_snapshot(self):
-        if not self.current_snapshot_coords: return
+    def create_snapshot(self, custom_coords = None):
+        coords = self.current_snapshot_coords if not custom_coords else custom_coords
+        if not coords: return
 
-        snap = self.current_snapshot_coords
+        snapshot = pygame.Surface((coords["right"] - coords["left"], coords["bottom"] - coords["top"]))
+        snapshot.blit(self.canvas.canvas_surface, (0, 0), (coords["left"], coords["top"], coords["right"], coords["bottom"]))
 
-        width = snap["right"] - snap["left"]
-        height = snap["bottom"] - snap["top"]
-
-        snapshot = pygame.Surface((width, height))
-        snapshot.blit(self.canvas.canvas_surface, (0, 0), (snap["left"], snap["top"], snap["right"], snap["bottom"]))
-
-        self.undo_list.append({
-            "x": snap["left"],
-            "y": snap["top"],
+        self.snapshots.append({
+            "x": coords["left"],
+            "y": coords["top"],
             "snapshot": snapshot
         })
-
         self.current_snapshot_coords = {}
+        self.redo_snapshots = []
 
     def undo(self):
-        if len(self.undo_list) <= 0: return
+        if len(self.snapshots) <= 0: return
 
-        self.undo_list.pop()
+        self.redo_snapshots.append(self.snapshots.pop())
+
         self.canvas.canvas_surface.fill("white")
 
-        for i in range(len(self.undo_list)):
-            el = self.undo_list[i]
-
+        for i in range(len(self.snapshots)):
+            el = self.snapshots[i]
             self.canvas.canvas_surface.blit(el["snapshot"], (el["x"], el["y"]))
 
         self.canvas.render_canvas()
 
     def redo(self):
-        pass
+        if len(self.redo_snapshots) <= 0: return
+
+        redo_el = self.redo_snapshots.pop()
+        self.snapshots.append(redo_el)
+
+        self.canvas.canvas_surface.blit(redo_el["snapshot"], (redo_el["x"], redo_el["y"]))
+        self.canvas.render_canvas()

@@ -82,12 +82,12 @@ class Canvas:
                 else:
                     if self.paste_box:
                         self.paste_box.commit_paste()
-                    #self.select.begin_select()
                     self.draw.draw(event)
         elif event.button == 2:
             self.zoom_pan.begin_pan()
         elif event.button == 3:
-            self.draw.delete(event)
+            #self.draw.delete(event)
+            self.select.select()
 
     def mouse_motion(self, event):
         if event.buttons == (1, 0, 0):
@@ -102,14 +102,15 @@ class Canvas:
         elif event.buttons == (0, 1, 0):
             self.zoom_pan.pan()
         elif event.buttons == (0, 0, 1):
-            self.draw.cursor(event)
-            self.draw.delete(event)
+            # self.draw.cursor(event)
+            # self.draw.delete(event)
+            self.select.select()
         else:
             pass
             self.draw.cursor(event)
         
     def mouse_up(self):
-        self.undo_redo.end_snapshot()
+        self.undo_redo.create_snapshot()
 
         if self.paste_box:
             self.paste_box.stop_moving()
@@ -122,6 +123,8 @@ class Canvas:
             self.select.paste()
         elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
             self.undo_redo.undo()
+        elif event.key == pygame.K_y and pygame.key.get_mods() & pygame.KMOD_CTRL:
+            self.undo_redo.redo()
         elif event.key == pygame.K_RETURN:
             if self.paste_box:
                 self.paste_box.commit_paste()

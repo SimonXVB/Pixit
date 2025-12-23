@@ -142,6 +142,12 @@ class PasteBox:
 
     def commit_paste(self):
         self.canvas.canvas_surface.blit(self.scaled_copied_area, (self.grid_x, self.grid_y))
+
+        self.canvas.undo_redo.create_snapshot({"left": self.grid_x,
+                                               "top": self.grid_y,
+                                               "right": self.grid_x + self.scaled_copied_area.get_width(),
+                                               "bottom": self.grid_y + self.scaled_copied_area.get_height()})
+
         self.clear_paste_box()
 
     def clear_paste_box(self):
