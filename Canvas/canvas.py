@@ -4,10 +4,10 @@ import time
 from typing import TYPE_CHECKING
 from math import floor
 
-from Classes.select import Select
-from Classes.zoomPan import ZoomPan
-from Classes.draw import Draw
-from Classes.undoRedo import UndoRedo
+from Canvas.Classes.select import Select
+from Canvas.Classes.zoomPan import ZoomPan
+from Canvas.Classes.draw import Draw
+from Canvas.Classes.undoRedo import UndoRedo
 
 def ex_time(func):
     def wrapper(*args, **kwargs) -> None:
@@ -52,8 +52,6 @@ class Canvas:
 
         self.canvas_surface = pygame.Surface((self.canvas_width, self.canvas_height))
         self.canvas_surface.fill("white")
-        pygame.draw.rect(self.canvas_surface, "red", (10, 10, 10, 10))
-        pygame.draw.rect(self.canvas_surface, "green", (25, 25, 10, 10))
 
         self.temp_surface = pygame.Surface((self.canvas_width, self.canvas_height), flags=pygame.SRCALPHA)
         self.temp_surface.fill((0, 0, 0, 0))

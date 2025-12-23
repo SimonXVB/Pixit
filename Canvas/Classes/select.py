@@ -1,7 +1,7 @@
 import pygame
 from math import floor, ceil
 from typing import TYPE_CHECKING
-from Classes.pasteBox import PasteBox
+from Canvas.Classes.pasteBox import PasteBox
 
 if TYPE_CHECKING:
     import canvas

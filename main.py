@@ -1,6 +1,7 @@
 import pygame
 from sys import exit
-from canvas import Canvas
+from Canvas.canvas import Canvas
+from Toolbar.toolbar import Toolbar
 
 class Main:
     def __init__(self) -> None:
@@ -9,7 +10,10 @@ class Main:
 
         #init
         self.window = pygame.display.set_mode((1820, 980), vsync=1)
-        self.canvas = Canvas(main=self)
+
+        self.toolbar = Toolbar(main=self)
+        #self.canvas = Canvas(main=self)
+
         self.clock = pygame.time.Clock()
 
         #start the event loop
@@ -24,7 +28,8 @@ class Main:
                     pygame.quit()
                     exit()
 
-            self.canvas.event_poll(events)
+            #self.canvas.event_poll(events)
+            self.toolbar.event_poll(events)
 
             #print(self.clock.get_fps())
 
