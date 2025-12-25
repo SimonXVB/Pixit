@@ -2,6 +2,7 @@ import pygame
 from typing import TYPE_CHECKING
 from Toolbar.Classes.button import Button
 from Toolbar.Classes.slider import Slider
+from Toolbar.Classes.input import Input
 
 if TYPE_CHECKING:
     import main
@@ -19,6 +20,7 @@ class Toolbar:
         }
 
         self.slider = Slider(self, 400, 30, 600, 25, lambda: print("slider test"))
+        self.input = Input(self, 300, 70, 1050, 10, lambda: print("input1 test"))
 
         self.update()
 
@@ -33,7 +35,13 @@ class Toolbar:
                     element.click()
 
                 self.slider.begin_move()
+                self.input.set_focus()
             elif event.type == pygame.MOUSEMOTION:
                 self.slider.set_value()
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.slider.end_move()
+            elif event.type == pygame.KEYDOWN:
+                self.input.add_input(event)
+
+                if event.key == pygame.K_BACKSPACE:
+                    self.input.remove_input()
