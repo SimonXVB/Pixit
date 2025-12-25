@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from Toolbar.Classes.button import Button
 from Toolbar.Classes.slider import Slider
 from Toolbar.Classes.input import Input
+from Toolbar.Classes.color_picker import ColorPicker
 
 if TYPE_CHECKING:
     import main
@@ -21,6 +22,7 @@ class Toolbar:
 
         self.slider = Slider(self, 400, 30, 600, 25, lambda: print("slider test"))
         self.input = Input(self, 300, 70, 1050, 10, lambda: print("input1 test"))
+        self.color_picker = ColorPicker(self, 300, 40, 1400, 10, lambda: print("picker"))
 
         self.update()
 
@@ -35,11 +37,14 @@ class Toolbar:
                     element.click()
 
                 self.slider.begin_move()
+                self.color_picker.begin_move()
                 self.input.set_focus()
             elif event.type == pygame.MOUSEMOTION:
                 self.slider.set_value()
+                self.color_picker.set_value()
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.slider.end_move()
+                self.color_picker.end_move()
             elif event.type == pygame.KEYDOWN:
                 self.input.add_input(event)
 
