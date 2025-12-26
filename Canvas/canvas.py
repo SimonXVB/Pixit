@@ -25,7 +25,7 @@ class Canvas:
     def __init__(self, main: "Main") -> None:
         self.main = main
 
-        self.color: pygame.Color = pygame.Color(255, 255, 255, 255)
+        self.color: pygame.Color = pygame.Color((255, 0, 0, 255))
         self.bg_color = "#ffffff"
         self.pixel_size: int = 5
         self.canvas_width: int = 50
@@ -41,7 +41,7 @@ class Canvas:
         self.top_layer = pygame.Surface(self.base_layer.get_size(), flags=pygame.SRCALPHA)
         self.top_layer.fill((0, 0, 0, 0))
 
-        self.scale = (self.base_layer.get_height() / self.canvas_height) * 0.95
+        self.scale = floor((self.base_layer.get_height() / self.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.canvas_height) * 0.95) > 1 else 1
         self.baseline_scale = self.scale
 
         self.offset_x = (self.base_layer.get_width() / 2) - ((self.canvas_width * self.scale) / 2)
@@ -59,7 +59,13 @@ class Canvas:
 
         self.render_canvas()
 
+    def canvas_collision(self):
+        canvas_rect = self.base_layer.get_rect(topleft = (0, self.toolbar_height))
+        return canvas_rect.collidepoint(pygame.mouse.get_pos())
+
     def event_poll(self, events):
+        if not self.canvas_collision(): return
+
         for event in events:
             if event.type == pygame.MOUSEWHEEL:
                 self.zoom_pan.zoom(event)
@@ -74,45 +80,48 @@ class Canvas:
 
     def mouse_down(self, event):
         if event.button == 1:
-                if self.main.interaction_state == "draw":
-                    self.draw.draw(event)
-                elif self.main.interaction_state == "delete":
-                    self.draw.delete(event)
-                elif self.main.interaction_state == "select":
-                    self.select.select()
-
                 if self.paste_box and self.paste_box.collision() == "node":
                     self.paste_box.begin_scale()
                 elif self.paste_box and self.paste_box.collision() == "copied_area":
                     self.paste_box.begin_move()
+                else:
+                    if self.main.interaction_state == "draw":
+                        self.draw.draw()
+                    elif self.main.interaction_state == "delete":
+                        self.draw.delete()
+                    elif self.main.interaction_state == "select":
+                        self.select.begin_select()
 
-                if self.paste_box:
-                    self.paste_box.commit_paste()
+                    if self.paste_box:
+                        self.paste_box.commit_paste()
         elif event.button == 2:
             self.zoom_pan.begin_pan()
         elif event.button == 3:
-            self.draw.delete(event)
+            self.draw.delete()
 
     def mouse_motion(self, event):
         if event.buttons == (1, 0, 0):
-            if self.main.interaction_state == "draw":
-                self.draw.cursor(event)
-                self.draw.draw(event)
-            elif self.main.interaction_state == "delete":
-                self.draw.cursor(event)
-                self.draw.delete(event)
-            elif self.main.interaction_state == "select":
-                self.select.select()
-
             if self.paste_box and self.paste_box.is_scaling:
                 self.paste_box.scale()
             elif self.paste_box and self.paste_box.is_moving:
                 self.paste_box.move()
+            else:
+                if self.main.interaction_state == "draw":
+                    self.draw.cursor()
+                    self.draw.draw()
+                elif self.main.interaction_state == "delete":
+                    self.draw.cursor()
+                    self.draw.delete()
+                elif self.main.interaction_state == "select":
+                    self.select.select()
         elif event.buttons == (0, 1, 0):
             self.zoom_pan.pan()
         elif event.buttons == (0, 0, 1):
-            self.draw.cursor(event)
-            self.draw.delete(event)
+            self.draw.cursor()
+            self.draw.delete()
+
+        if self.main.interaction_state == "draw" or self.main.interaction_state == "delete":
+            self.draw.cursor()
         
     def mouse_up(self):
         self.undo_redo.create_snapshot()
@@ -150,7 +159,7 @@ class Canvas:
 
         self.canvas_surface = new_canvas
 
-        self.scale = (self.base_layer.get_height() / self.canvas_height) * 0.95
+        self.scale = floor((self.base_layer.get_height() / self.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.canvas_height) * 0.95) > 1 else 1
         self.baseline_scale = self.scale
 
         self.offset_x = (self.base_layer.get_width() / 2) - ((self.canvas_width * self.scale) / 2)

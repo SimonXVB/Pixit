@@ -9,7 +9,6 @@ class ColorPicker:
     def __init__(self, toolbar: "Toolbar", width: int, height: int, pos_x: int, pos_y: int, event: "Callable[[], None]") -> None:
         self.toolbar = toolbar
 
-
         self.width = width
         self.height = height
         self.pos_x = pos_x
@@ -17,7 +16,7 @@ class ColorPicker:
         self.event = event
 
         self.value: float = 0
-        self.color: "pygame.Color" = pygame.Color(255, 255, 255, 255)
+        self.color: "pygame.Color" = pygame.Color((255, 0, 0, 255))
         self.is_moving: bool = False
 
         self.color_picker: pygame.Surface = pygame.Surface((self.width, self.height))

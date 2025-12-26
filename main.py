@@ -38,6 +38,8 @@ class Main:
         self.canvas.pixel_size = new_size
 
     def set_color(self, color: pygame.Color):
+        print(color)
+
         self.canvas.color = color
 
     def event_loop(self):

@@ -25,7 +25,8 @@ class Toolbar:
             "Select": Button(self, 35, 35, 120, 55, "SL", lambda: self.main.set_interaction_state("select")),
             "Undo": Button(self, 35, 35, 195, 10, "UD", lambda: self.canvas.undo_redo.undo()),
             "Redo": Button(self, 35, 35, 195, 55, "RD", lambda: self.canvas.undo_redo.redo()),
-            "Paste": Button(self, 35, 80, 240, 10, "P", lambda: self.canvas.select.paste()),
+            "Copy": Button(self, 35, 35, 240, 10, "C", lambda: self.canvas.select.copy()),
+            "Paste": Button(self, 35, 35, 240, 55, "P", lambda: self.canvas.select.paste()),
             "Apply": Button(self, 35, 80, 695, 10, "A", lambda: self.canvas.set_canvas_size(self.x_input.get_value(), self.y_input.get_value())),
         }
 
@@ -41,7 +42,15 @@ class Toolbar:
         assert self.toolbar_surface
         self.main.window.blit(self.toolbar_surface, (0, 0))
 
+    def toolbar_collision(self):
+        assert self.toolbar_surface
+
+        toolbar_rect = self.toolbar_surface.get_rect(topleft = (0, 0))
+        return toolbar_rect.collidepoint(pygame.mouse.get_pos())
+
     def event_poll(self, events):
+        if not self.toolbar_collision(): return
+
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for element in self.buttons.values():

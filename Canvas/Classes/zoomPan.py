@@ -51,14 +51,17 @@ class ZoomPan:
 
     def zoom(self, event):
         PREV_SCALE = self.canvas.scale
-        SCALE_INTERVAL = self.canvas.baseline_scale * 0.05
+        SCALE_INTERVAL = floor(self.canvas.baseline_scale * 0.05) if floor(self.canvas.baseline_scale * 0.05) > 1 else 1
+        
+        print(self.canvas.scale)
 
         if event.y == 1 and self.canvas.scale <= self.canvas.baseline_scale * 10:
-            self.canvas.scale = self.canvas.scale + SCALE_INTERVAL
-        elif event.y == -1 and self.canvas.scale > self.canvas.baseline_scale * 0.1:
-            self.canvas.scale = self.canvas.scale - SCALE_INTERVAL
+            self.canvas.scale += SCALE_INTERVAL
+        elif event.y == -1 and self.canvas.scale > 1:
+            self.canvas.scale -= SCALE_INTERVAL
         else:
             return
+        
 
         x = floor(pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.canvas.offset_x) * (self.canvas.scale / PREV_SCALE))
         y = floor(pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.canvas.offset_y) * (self.canvas.scale / PREV_SCALE))
@@ -71,8 +74,8 @@ class ZoomPan:
         self.start_y = pygame.mouse.get_pos()[1]
 
     def pan(self):
-        x = self.canvas.offset_x + (pygame.mouse.get_pos()[0] - self.start_x)
-        y = self.canvas.offset_y + (pygame.mouse.get_pos()[1] - self.start_y)
+        x = floor(self.canvas.offset_x + (pygame.mouse.get_pos()[0] - self.start_x))
+        y = floor(self.canvas.offset_y + (pygame.mouse.get_pos()[1] - self.start_y))
 
         self.start_x = pygame.mouse.get_pos()[0]
         self.start_y = pygame.mouse.get_pos()[1]

@@ -9,9 +9,9 @@ class Draw:
     def __init__(self, canvas: "canvas.Canvas") -> None:
         self.canvas = canvas
 
-    def get_pixel_coords(self, event) -> dict[str, int] | None:
-        GRID_X = floor((event.pos[0] - self.canvas.offset_x) / self.canvas.scale)
-        GRID_Y = floor((event.pos[1] - self.canvas.offset_y - 100) / self.canvas.scale)
+    def get_pixel_coords(self) -> dict[str, int] | None:
+        GRID_X = floor((pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale)
+        GRID_Y = floor((pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.toolbar_height) / self.canvas.scale)
 
         if GRID_X < 0 or GRID_X > self.canvas.canvas_width: return
         if GRID_Y < 0 or GRID_Y > self.canvas.canvas_height: return
@@ -46,16 +46,16 @@ class Draw:
             "height": height
         }
     
-    def cursor(self, event):
-        coords = self.get_pixel_coords(event)
+    def cursor(self):
+        coords = self.get_pixel_coords()
 
         if coords:
             self.canvas.temp_surface.fill((0, 0, 0, 0))
-            pygame.draw.rect(self.canvas.temp_surface, "blue", (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
+            pygame.draw.rect(self.canvas.temp_surface, self.canvas.color, (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
             self.canvas.render_canvas()
 
-    def draw(self, event):
-        coords = self.get_pixel_coords(event)
+    def draw(self):
+        coords = self.get_pixel_coords()
 
         if coords:
             self.canvas.undo_redo.set_snapshot_rect(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
@@ -63,8 +63,8 @@ class Draw:
             pygame.draw.rect(self.canvas.canvas_surface, self.canvas.color, (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
             self.canvas.render_canvas()
 
-    def delete(self, event):
-        coords = self.get_pixel_coords(event)
+    def delete(self):
+        coords = self.get_pixel_coords()
 
         if coords:
             self.canvas.undo_redo.set_snapshot_rect(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
