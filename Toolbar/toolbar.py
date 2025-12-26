@@ -6,23 +6,34 @@ from Toolbar.Classes.input import Input
 from Toolbar.Classes.color_picker import ColorPicker
 
 if TYPE_CHECKING:
-    import main
+    from main import Main
+    from Canvas.canvas import Canvas
 
 class Toolbar:
-    def __init__(self, main: "main.Main") -> None:
+    def __init__(self, main: "Main", canvas: "Canvas") -> None:
         self.main = main
+        self.canvas = canvas
         
         self.toolbar_surface: pygame.Surface | None = pygame.Surface((self.main.window.get_width(), 100))
         self.toolbar_surface.fill("blue")
 
         self.buttons = {
-            "button": Button(self, 200, 50, 20, 30, "Hello", lambda: print("button test")),
-            "button1": Button(self, 200, 50, 300, 30, "Bye", lambda: print("button test1"))
+            "Save": Button(self, 35, 35, 10, 10, "SV", lambda: print("Save")),
+            "Load": Button(self, 35, 35, 10, 55, "LD", lambda: print("Load")),
+            "Draw": Button(self, 35, 80, 75, 10, "D", lambda: self.main.set_interaction_state("draw")),
+            "Delete": Button(self, 35, 35, 120, 10, "DL", lambda: self.main.set_interaction_state("delete")),
+            "Select": Button(self, 35, 35, 120, 55, "SL", lambda: self.main.set_interaction_state("select")),
+            "Undo": Button(self, 35, 35, 195, 10, "UD", lambda: self.canvas.undo_redo.undo()),
+            "Redo": Button(self, 35, 35, 195, 55, "RD", lambda: self.canvas.undo_redo.redo()),
+            "Paste": Button(self, 35, 80, 240, 10, "P", lambda: self.canvas.select.paste()),
+            "Apply": Button(self, 35, 80, 695, 10, "A", lambda: self.canvas.set_canvas_size(self.x_input.get_value(), self.y_input.get_value())),
         }
 
-        self.slider = Slider(self, 400, 30, 600, 25, lambda: print("slider test"))
-        self.input = Input(self, 300, 70, 1050, 10, lambda: print("input1 test"))
-        self.color_picker = ColorPicker(self, 300, 40, 1400, 10, lambda: print("picker"))
+        self.size_slider = Slider(self, 250, 35, 305, 10, lambda: self.main.set_brush_size(self.size_slider.get_value()))
+        self.color_picker = ColorPicker(self, 250, 35, 305, 55, lambda: self.main.set_color(self.color_picker.get_color()))
+
+        self.x_input = Input(self, 100, 35, 585, 10, lambda: print("X Input"))
+        self.y_input = Input(self, 100, 35, 585, 55, lambda: print("Y Input"))
 
         self.update()
 
@@ -36,17 +47,20 @@ class Toolbar:
                 for element in self.buttons.values():
                     element.click()
 
-                self.slider.begin_move()
+                self.size_slider.begin_move()
                 self.color_picker.begin_move()
-                self.input.set_focus()
+                self.x_input.set_focus()
+                self.y_input.set_focus()
             elif event.type == pygame.MOUSEMOTION:
-                self.slider.set_value()
+                self.size_slider.set_value()
                 self.color_picker.set_value()
             elif event.type == pygame.MOUSEBUTTONUP:
-                self.slider.end_move()
+                self.size_slider.end_move()
                 self.color_picker.end_move()
             elif event.type == pygame.KEYDOWN:
-                self.input.add_input(event)
+                self.x_input.add_input(event)
+                self.y_input.add_input(event)
 
                 if event.key == pygame.K_BACKSPACE:
-                    self.input.remove_input()
+                    self.x_input.remove_input()
+                    self.y_input.remove_input()

@@ -11,7 +11,7 @@ class Draw:
 
     def get_pixel_coords(self, event) -> dict[str, int] | None:
         GRID_X = floor((event.pos[0] - self.canvas.offset_x) / self.canvas.scale)
-        GRID_Y = floor((event.pos[1] - self.canvas.offset_y) / self.canvas.scale)
+        GRID_Y = floor((event.pos[1] - self.canvas.offset_y - 100) / self.canvas.scale)
 
         if GRID_X < 0 or GRID_X > self.canvas.canvas_width: return
         if GRID_Y < 0 or GRID_Y > self.canvas.canvas_height: return
@@ -60,7 +60,7 @@ class Draw:
         if coords:
             self.canvas.undo_redo.set_snapshot_rect(coords["start_x"], coords["start_y"], coords["end_x"], coords["end_y"])
 
-            pygame.draw.rect(self.canvas.canvas_surface, "red", (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
+            pygame.draw.rect(self.canvas.canvas_surface, self.canvas.color, (coords["start_x"], coords["start_y"], coords["width"], coords["height"]))
             self.canvas.render_canvas()
 
     def delete(self, event):

@@ -11,7 +11,7 @@ class Input:
 
         self.input: pygame.Surface | None = None
 
-        self.content = "0"
+        self.value = "0"
         self.is_focused = False
 
         self.width = width
@@ -41,7 +41,7 @@ class Input:
         self.input = pygame.Surface((self.width, self.height))
         self.input.fill("yellow")
 
-        font = pygame.font.SysFont("Arial", int(self.height * 0.80)).render(self.content + "px", True, "Black")
+        font = pygame.font.SysFont("Arial", int(self.height * 0.80)).render(self.value + "px", True, "Black")
         center = font.get_rect(center=(self.width / 2, self.height / 2))
 
         self.input.blit(font, (self.width * 0.02, center[1]))
@@ -51,13 +51,21 @@ class Input:
     def add_input(self, event):
         if not self.is_focused: return
 
-        if event.unicode.isnumeric() and len(self.content) < 4:
-            self.content += event.unicode
+        if event.unicode.isnumeric() and len(self.value) < 4:
+            self.value += event.unicode
 
         self.update()
 
     def remove_input(self):
-        if not self.is_focused and len(self.content) < 0: return
+        if not self.is_focused or len(self.value) < 0: return
 
-        self.content = self.content[:-1]
+        self.value = self.value[:-1]
         self.update()
+
+    def get_value(self) -> int:
+        return int(self.value)
+    
+    def set_value(self, value: str):
+        if self.value.isnumeric():
+            self.value = value
+            self.update()
