@@ -9,36 +9,29 @@ class Input:
     def __init__(self, toolbar: "Toolbar", width: int, height: int, pos_x: int, pos_y: int, event: "Callable[[], None]") -> None:
         self.toolbar = toolbar
 
-        self.input: pygame.Surface | None = None
-
-        self.value = "0"
-        self.is_focused = False
+        self.input = pygame.Surface((width, height))
 
         self.width = width
         self.height = height
         self.pos_x = pos_x
         self.pos_y = pos_y
-
         self.event = event
+
+        self.value: str = "0"
+        self.is_focused: bool = False
 
         self.update()
 
-    def collision(self):
-        assert self.input
-
-        input_rect = self.input.get_rect(topleft = (self.pos_x, self.pos_y))
-        return input_rect.collidepoint(pygame.mouse.get_pos())
-    
-    def set_focus(self):
-        if self.collision():
-            self.is_focused = True
-        else:
-            self.is_focused = False
+    def event_poll(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.set_focus()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                self.remove_input()
+            else:
+                self.add_input(event)
 
     def update(self):
-        assert self.toolbar.toolbar_surface
-
-        self.input = pygame.Surface((self.width, self.height))
         self.input.fill("yellow")
 
         font = pygame.font.SysFont("Arial", int(self.height * 0.80)).render(self.value + "px", True, "Black")
@@ -48,13 +41,22 @@ class Input:
         self.toolbar.toolbar_surface.blit(self.input, (self.pos_x, self.pos_y))
         self.toolbar.update()
 
+    def collision(self):
+        input_rect = self.input.get_rect(topleft = (self.pos_x, self.pos_y))
+        return input_rect.collidepoint(pygame.mouse.get_pos())
+    
+    def set_focus(self):
+        if self.collision():
+            self.is_focused = True
+        else:
+            self.is_focused = False
+
     def add_input(self, event):
         if not self.is_focused: return
 
         if event.unicode.isnumeric() and len(self.value) < 4:
             self.value += event.unicode
-
-        self.update()
+            self.update()
 
     def remove_input(self):
         if not self.is_focused or len(self.value) < 0: return
@@ -62,10 +64,10 @@ class Input:
         self.value = self.value[:-1]
         self.update()
 
+    def set_value(self, value: int):
+        if self.value.isnumeric():
+            self.value = str(value)
+            self.update()
+
     def get_value(self) -> int:
         return int(self.value)
-    
-    def set_value(self, value: str):
-        if self.value.isnumeric():
-            self.value = value
-            self.update()

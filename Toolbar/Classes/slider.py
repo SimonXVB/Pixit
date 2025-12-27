@@ -22,22 +22,29 @@ class Slider:
         self.slider.fill("green")
 
         self.track_container: pygame.Surface = pygame.Surface((self.width * 0.95, self.height * 0.7))
+        self.track_container.fill("green")
+
         self.thumb_width = self.track_container.get_width() * 0.05
 
         self.update()
 
+    def event_poll(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.begin_move()
+        elif event.type == pygame.MOUSEMOTION:
+            self.set_value()
+        elif event.type == pygame.MOUSEBUTTONUP:
+            self.end_move()
+
     def update(self):
-        assert self.toolbar.toolbar_surface
-
-        track_container_center = self.track_container.get_rect(center=(self.width / 2, self.height / 2))
-        self.track_container.fill("green")
-
         position = self.value
         lower_limit = (self.thumb_width / 2) / self.track_container.get_width()
         upper_limit = 1 - ((self.thumb_width / 2) / self.track_container.get_width())
 
         if position >= upper_limit: position = upper_limit
         if position <= lower_limit: position = lower_limit
+
+        self.track_container.fill("green")
 
         track = pygame.Surface((self.track_container.get_width() - self.thumb_width, self.track_container.get_height() * 0.4))
         track_center = track.get_rect(center=(self.track_container.get_width() / 2, self.track_container.get_height() / 2))
@@ -50,13 +57,16 @@ class Slider:
         self.track_container.blit(track, track_center)
         self.track_container.blit(thumb, thumb_position)
         
+        track_container_center = self.track_container.get_rect(center=(self.width / 2, self.height / 2))
         self.slider.blit(self.track_container, track_container_center)
+        
         self.toolbar.toolbar_surface.blit(self.slider, (self.pos_x, self.pos_y))
 
-    def set_value(self):
-        assert self.slider
-        assert self.track_container
+    def track_collision(self):
+        track_rect = self.track_container.get_rect(topleft = (self.pos_x, self.pos_y))
+        return track_rect.collidepoint(pygame.mouse.get_pos())
 
+    def set_value(self):
         if not self.is_moving: return
 
         left_pos = (self.pos_x + ((self.slider.get_width() - self.track_container.get_width()) / 2)) + (self.thumb_width / 2)
@@ -72,12 +82,6 @@ class Slider:
         self.event()
         self.update()
         self.toolbar.update()
-
-    def track_collision(self):
-        assert self.track_container
-
-        track_rect = self.track_container.get_rect(topleft = (self.pos_x, self.pos_y))
-        return track_rect.collidepoint(pygame.mouse.get_pos())
     
     def begin_move(self):
         if self.track_collision() and not self.is_moving:

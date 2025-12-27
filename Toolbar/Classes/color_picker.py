@@ -16,10 +16,10 @@ class ColorPicker:
         self.event = event
 
         self.value: float = 0
-        self.color: "pygame.Color" = pygame.Color((255, 0, 0, 255))
+        self.color: "pygame.Color" = self.toolbar.main.color
         self.is_moving: bool = False
 
-        self.color_picker: pygame.Surface = pygame.Surface((self.width, self.height))
+        self.color_picker = pygame.Surface((self.width, self.height))
 
         self.gradient_container = pygame.Surface((self.width * 0.95, self.height * 0.7))
         self.thumb_width = self.gradient_container.get_width() * 0.05
@@ -36,10 +36,15 @@ class ColorPicker:
 
         self.update()
 
-    def update(self):
-        assert self.toolbar.toolbar_surface
+    def event_poll(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self.begin_move()
+        elif event.type == pygame.MOUSEMOTION:
+            self.set_value()
+        elif event.type == pygame.MOUSEBUTTONUP:
+            self.end_move()
 
-        gradient_container_center = self.gradient_container.get_rect(center=(self.width / 2, self.height / 2))
+    def update(self):
         self.gradient_container.fill("black")
 
         lower_limit = ((self.gradient_container.get_width() * 0.05) / 2) / self.gradient_container.get_width()
@@ -55,17 +60,19 @@ class ColorPicker:
         thumb.fill(self.color)
 
         gradient_center = self.gradient.get_rect(center=(self.gradient_container.get_width() / 2, self.gradient_container.get_height() / 2))
-
         self.gradient_container.blit(self.gradient, gradient_center)
         self.gradient_container.blit(thumb, thumb_position)
 
+        gradient_container_center = self.gradient_container.get_rect(center=(self.width / 2, self.height / 2))
         self.color_picker.blit(self.gradient_container, gradient_container_center)
+
         self.toolbar.toolbar_surface.blit(self.color_picker, (self.pos_x, self.pos_y))
 
-    def set_value(self):
-        assert self.color_picker
-        assert self.gradient_container
+    def track_collision(self):
+        track_rect = self.gradient_container.get_rect(topleft = (self.pos_x, self.pos_y))
+        return track_rect.collidepoint(pygame.mouse.get_pos())
 
+    def set_value(self):
         if not self.is_moving: return
 
         left_pos = (self.pos_x + ((self.color_picker.get_width() - self.gradient_container.get_width()) / 2)) + (self.thumb_width / 2)
@@ -87,12 +94,6 @@ class ColorPicker:
         self.event()
         self.update()
         self.toolbar.update()
-
-    def track_collision(self):
-        assert self.gradient_container
-
-        track_rect = self.gradient_container.get_rect(topleft = (self.pos_x, self.pos_y))
-        return track_rect.collidepoint(pygame.mouse.get_pos())
     
     def begin_move(self):
         if self.track_collision() and not self.is_moving:

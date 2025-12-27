@@ -14,7 +14,7 @@ class Toolbar:
         self.main = main
         self.canvas = canvas
         
-        self.toolbar_surface: pygame.Surface | None = pygame.Surface((self.main.window.get_width(), 100))
+        self.toolbar_surface: pygame.Surface = pygame.Surface((self.main.window.get_width(), 100))
         self.toolbar_surface.fill("blue")
 
         self.buttons = {
@@ -36,15 +36,15 @@ class Toolbar:
         self.x_input = Input(self, 100, 35, 585, 10, lambda: print("X Input"))
         self.y_input = Input(self, 100, 35, 585, 55, lambda: print("Y Input"))
 
+        self.x_input.set_value(self.main.canvas_width)
+        self.y_input.set_value(self.main.canvas_height)
+
         self.update()
 
     def update(self):
-        assert self.toolbar_surface
         self.main.window.blit(self.toolbar_surface, (0, 0))
 
     def toolbar_collision(self):
-        assert self.toolbar_surface
-
         toolbar_rect = self.toolbar_surface.get_rect(topleft = (0, 0))
         return toolbar_rect.collidepoint(pygame.mouse.get_pos())
 
@@ -52,24 +52,11 @@ class Toolbar:
         if not self.toolbar_collision(): return
 
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for element in self.buttons.values():
-                    element.click()
+            for element in self.buttons.values():
+                element.event_poll(event)
+            
+            self.size_slider.event_poll(event)
+            self.color_picker.event_poll(event)
 
-                self.size_slider.begin_move()
-                self.color_picker.begin_move()
-                self.x_input.set_focus()
-                self.y_input.set_focus()
-            elif event.type == pygame.MOUSEMOTION:
-                self.size_slider.set_value()
-                self.color_picker.set_value()
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.size_slider.end_move()
-                self.color_picker.end_move()
-            elif event.type == pygame.KEYDOWN:
-                self.x_input.add_input(event)
-                self.y_input.add_input(event)
-
-                if event.key == pygame.K_BACKSPACE:
-                    self.x_input.remove_input()
-                    self.y_input.remove_input()
+            self.x_input.event_poll(event)
+            self.y_input.event_poll(event)
