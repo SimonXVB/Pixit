@@ -19,8 +19,8 @@ class Toolbar:
         pygame.draw.line(self.toolbar_surface, self.main.colors["border"], (0, self.toolbar_surface.get_height()), (self.toolbar_surface.get_width(), self.toolbar_surface.get_height()), 5)
 
         self.buttons = {
-            "Save": Button(self, 35, 35, 10, 10, "SV", lambda: print("Save")),
-            "Load": Button(self, 35, 35, 10, 55, "LD", lambda: print("Load")),
+            "Save": Button(self, 35, 35, 10, 10, "SV", lambda: self.main.save_img()),
+            "Load": Button(self, 35, 35, 10, 55, "LD", lambda: self.main.load_img()),
             "Draw": Button(self, 35, 80, 75, 10, "D", lambda: self.main.set_interaction_state("draw")),
             "Delete": Button(self, 35, 35, 120, 10, "DL", lambda: self.main.set_interaction_state("delete")),
             "Select": Button(self, 35, 35, 120, 55, "SL", lambda: self.main.set_interaction_state("select")),

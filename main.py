@@ -3,6 +3,10 @@ import pygame
 from sys import exit
 from Canvas.canvas import Canvas
 from Toolbar.toolbar import Toolbar
+import tkinter as tk # import tkinter for file dialog
+from tkinter import filedialog
+from PIL import Image
+import os
 
 class Main:
     def __init__(self) -> None:
@@ -19,6 +23,11 @@ class Main:
         self.canvas_height: int = 50
         self.toolbar_height = 100
         self.interaction_state = "draw"
+
+        self.saved_path: str = ""
+
+        self.tk_root = tk.Tk()
+        self.tk_root.withdraw()
 
         self.colors = {
             "primary": pygame.Color((115, 115, 115, 255)),
@@ -71,6 +80,43 @@ class Main:
 
     def set_color(self, color: pygame.Color):
         self.color = color
+
+    def load_img(self):
+        path = filedialog.askopenfilename(filetypes=[("Filetypes", "*.bmp .png *.jpeg")])
+
+        if not path: return
+
+        try:
+            image = Image.open(path)
+            pygame_image = pygame.image.load(path)
+
+            if image.size[0] > 999 or image.size[1] > 999:
+                return
+
+            self.canvas.canvas_surface = pygame.Surface((image.size[0], image.size[1]))
+            self.canvas.canvas_surface.blit(pygame_image, (0, 0))
+            self.canvas.set_canvas_size(image.size[0], image.size[1])
+
+            self.toolbar.x_input.set_value(image.size[0])
+            self.toolbar.y_input.set_value(image.size[1])
+        except:
+            pass
+
+    def save_img(self):
+        if self.saved_path == "":
+            path = filedialog.askdirectory()
+
+            if not path: return
+
+            for i in os.listdir(path):
+                if i == "pixit.png":
+                    print("Return")
+                    return
+                else:
+                    self.saved_path = path
+                    pygame.image.save(self.canvas.canvas_surface, path + "/pixit.png")
+        else:
+            pygame.image.save(self.canvas.canvas_surface, self.saved_path + "/pixit.png")
 
     def event_loop(self):
         while True:
