@@ -1,25 +1,14 @@
 import pygame
-from math import floor
 from typing import TYPE_CHECKING
-import time
-
-def ex_time(func):
-    def wrapper(*args, **kwargs) -> None:
-        s = time.time()
-        func(*args, **kwargs)
-        e = time.time()
-        print(e-s)
-    return wrapper
 
 if TYPE_CHECKING:
-    import canvas
+    from canvas import Canvas
 
 class UndoRedo:
-    def __init__(self, canvas: "canvas.Canvas") -> None:
+    def __init__(self, canvas: "Canvas") -> None:
         self.canvas = canvas
 
         self.current_snapshot_coords = {}
-
         self.snapshots: list = []
         self.redo_snapshots: list = []
 
@@ -60,7 +49,7 @@ class UndoRedo:
 
         self.redo_snapshots.append(self.snapshots.pop())
 
-        self.canvas.canvas_surface.fill("white")
+        self.canvas.canvas_surface.fill(self.canvas.main.bg_color)
 
         for i in range(len(self.snapshots)):
             el = self.snapshots[i]

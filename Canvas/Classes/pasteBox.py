@@ -3,20 +3,19 @@ from math import ceil, floor
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import canvas
+    from canvas import Canvas
 
 class PasteBox:
-    def __init__(self, canvas: "canvas.Canvas") -> None:
+    def __init__(self, canvas: "Canvas", copied_area: "pygame.Surface") -> None:
         self.canvas = canvas
 
-        assert self.canvas.copied_area is not None
-        self.copied_area = self.canvas.copied_area
-        self.scaled_copied_area = self.copied_area
+        self.copied_area = copied_area
+        self.scaled_copied_area = copied_area
         self.canvas_copied_area = pygame.transform.scale(self.scaled_copied_area, (self.scaled_copied_area.get_width() * self.canvas.scale, 
                                                                                    self.scaled_copied_area.get_height() * self.canvas.scale))
 
         self.grid_x = floor((pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale) - floor(self.scaled_copied_area.get_width() / 2)
-        self.grid_y = floor((pygame.mouse.get_pos()[1] - self.canvas.offset_y) / self.canvas.scale) - floor(self.scaled_copied_area.get_height() / 2)
+        self.grid_y = floor((pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.main.toolbar_height) / self.canvas.scale) - floor(self.scaled_copied_area.get_height() / 2)
         self.right = self.grid_x + self.scaled_copied_area.get_width()
         self.bottom = self.grid_y + self.scaled_copied_area.get_height()
 
@@ -38,56 +37,51 @@ class PasteBox:
         canvas_x = (self.grid_x * self.canvas.scale) + self.canvas.offset_x
         canvas_y = (self.grid_y * self.canvas.scale) + self.canvas.offset_y
 
-        self.canvas_copied_area = pygame.transform.scale(self.scaled_copied_area, (self.scaled_copied_area.get_width() * self.canvas.scale, self.scaled_copied_area.get_height() * self.canvas.scale))
+        self.canvas_copied_area = pygame.transform.scale(self.scaled_copied_area, (self.scaled_copied_area.get_width() * self.canvas.scale, 
+                                                                                   self.scaled_copied_area.get_height() * self.canvas.scale))
         self.canvas.top_layer.blit(self.canvas_copied_area, (canvas_x, canvas_y))
-
         pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x, canvas_y, self.canvas_copied_area.get_width(), self.canvas_copied_area.get_height()), 1)
 
         offset = (self.canvas.scale / 3) / 2
         
         self.top_left_node = pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x - offset, 
                                                                              canvas_y - offset, 
-                                                                             self.canvas.scale / 3, 
-                                                                             self.canvas.scale / 3))
+                                                                             self.canvas.scale / 2, 
+                                                                             self.canvas.scale / 2))
         
         self.bottom_left_node = pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x - offset, 
                                                                                 (canvas_y + self.canvas_copied_area.get_height()) - offset, 
-                                                                                self.canvas.scale / 3, 
-                                                                                self.canvas.scale / 3))
+                                                                                self.canvas.scale / 2, 
+                                                                                self.canvas.scale / 2))
         
         self.top_right_node = pygame.draw.rect(self.canvas.top_layer, "red", ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
                                                                               canvas_y - offset, 
-                                                                              self.canvas.scale / 3, 
-                                                                              self.canvas.scale / 3))
+                                                                              self.canvas.scale / 2, 
+                                                                              self.canvas.scale / 2))
         
         self.bottom_right_node = pygame.draw.rect(self.canvas.top_layer, "red", ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
                                                                                  (canvas_y + self.canvas_copied_area.get_height()) - offset, 
-                                                                                 self.canvas.scale / 3, 
-                                                                                 self.canvas.scale / 3))
+                                                                                 self.canvas.scale / 2, 
+                                                                                 self.canvas.scale / 2))
 
     def collision(self):
-        assert self.top_left_node
-        assert self.bottom_left_node
-        assert self.top_right_node
-        assert self.bottom_right_node
-
         canvas_x = (self.grid_x * self.canvas.scale) + self.canvas.offset_x
-        canvas_y = (self.grid_y * self.canvas.scale) + (self.canvas.offset_y + self.canvas.toolbar_height)
+        canvas_y = (self.grid_y * self.canvas.scale) + (self.canvas.offset_y + self.canvas.main.toolbar_height)
         canvas_copied_area_rect = self.canvas_copied_area.get_rect(topleft = (canvas_x, canvas_y))
 
         pos_x = pygame.mouse.get_pos()[0]
-        pos_y = pygame.mouse.get_pos()[1] - self.canvas.toolbar_height
+        pos_y = pygame.mouse.get_pos()[1] - self.canvas.main.toolbar_height
 
-        if self.top_left_node.collidepoint((pos_x, pos_y)):
+        if self.top_left_node and self.top_left_node.collidepoint((pos_x, pos_y)):
             self.selected_node = "top_left"
             return "node"
-        elif self.bottom_left_node.collidepoint((pos_x, pos_y)):
+        elif self.bottom_left_node and self.bottom_left_node.collidepoint((pos_x, pos_y)):
             self.selected_node = "bottom_left"
             return "node"
-        elif self.top_right_node.collidepoint((pos_x, pos_y)):
+        elif self.top_right_node and self.top_right_node.collidepoint((pos_x, pos_y)):
             self.selected_node = "top_right"
             return "node"
-        elif self.bottom_right_node.collidepoint((pos_x, pos_y)):
+        elif self.bottom_right_node and self.bottom_right_node.collidepoint((pos_x, pos_y)):
             self.selected_node = "bottom_right"
             return "node"
         elif canvas_copied_area_rect.collidepoint(pygame.mouse.get_pos()):
@@ -101,7 +95,7 @@ class PasteBox:
     
     def scale(self):
         gx = (pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale
-        gy = (pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.toolbar_height) / self.canvas.scale
+        gy = (pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.main.toolbar_height) / self.canvas.scale
 
         new_size_x = 0
         new_size_y = 0
@@ -139,7 +133,7 @@ class PasteBox:
     
     def move(self):
         gx = floor((pygame.mouse.get_pos()[0] - self.canvas.offset_x) / self.canvas.scale) - floor(self.scaled_copied_area.get_width() / 2)
-        gy = floor((pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.toolbar_height) / self.canvas.scale) - floor(self.scaled_copied_area.get_height() / 2)
+        gy = floor((pygame.mouse.get_pos()[1] - self.canvas.offset_y - self.canvas.main.toolbar_height) / self.canvas.scale) - floor(self.scaled_copied_area.get_height() / 2)
 
         self.grid_x = gx
         self.grid_y = gy
@@ -151,8 +145,6 @@ class PasteBox:
         self.is_moving = False
 
     def commit_paste(self):
-        assert self.canvas.canvas_surface
-
         self.canvas.canvas_surface.blit(self.scaled_copied_area, (self.grid_x, self.grid_y))
 
         self.canvas.undo_redo.create_snapshot({"left": self.grid_x,

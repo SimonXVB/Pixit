@@ -12,6 +12,11 @@ class Main:
         #init
         self.window = pygame.display.set_mode((1820, 980), vsync=1)
 
+        self.color: pygame.Color = pygame.Color((255, 0, 0, 255))
+        self.bg_color = pygame.Color((255, 255, 255))
+        self.pixel_size: int = 5
+        self.canvas_width: int = 50
+        self.canvas_height: int = 50
         self.toolbar_height = 100
         self.interaction_state = "draw"
 
@@ -24,6 +29,11 @@ class Main:
         self.event_loop()
 
     def set_interaction_state(self, state: str):
+        if self.interaction_state == state: return
+
+        if self.canvas.paste_box:
+            self.canvas.paste_box.commit_paste()
+
         self.interaction_state = state
 
     def set_brush_size(self, value: float):
@@ -35,12 +45,10 @@ class Main:
         if new_size > max: new_size = max
         if new_size < min: new_size = min
 
-        self.canvas.pixel_size = new_size
+        self.pixel_size = new_size
 
     def set_color(self, color: pygame.Color):
-        print(color)
-
-        self.canvas.color = color
+        self.color = color
 
     def event_loop(self):
         while True:

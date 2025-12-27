@@ -3,18 +3,20 @@ from math import floor
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import canvas
-
+    from canvas import Canvas
+    from main import Main
+    
 class ZoomPan:
-    def __init__(self, canvas: "canvas.Canvas") -> None:
+    def __init__(self, canvas: "Canvas", main: "Main") -> None:
         self.canvas = canvas
+        self.main = main
 
         self.start_x = 0
         self.start_y = 0
 
     def set_offset(self, x: int, y: int):
-        canvas_width = self.canvas.canvas_width * self.canvas.scale
-        canvas_height = self.canvas.canvas_height * self.canvas.scale
+        canvas_width = self.main.canvas_width * self.canvas.scale
+        canvas_height = self.main.canvas_height * self.canvas.scale
 
         screen_width = self.canvas.base_layer.get_width()
         screen_height = self.canvas.base_layer.get_height()
@@ -52,8 +54,6 @@ class ZoomPan:
     def zoom(self, event):
         PREV_SCALE = self.canvas.scale
         SCALE_INTERVAL = floor(self.canvas.baseline_scale * 0.05) if floor(self.canvas.baseline_scale * 0.05) > 1 else 1
-        
-        print(self.canvas.scale)
 
         if event.y == 1 and self.canvas.scale <= self.canvas.baseline_scale * 10:
             self.canvas.scale += SCALE_INTERVAL
@@ -62,7 +62,6 @@ class ZoomPan:
         else:
             return
         
-
         x = floor(pygame.mouse.get_pos()[0] - (pygame.mouse.get_pos()[0] - self.canvas.offset_x) * (self.canvas.scale / PREV_SCALE))
         y = floor(pygame.mouse.get_pos()[1] - (pygame.mouse.get_pos()[1] - self.canvas.offset_y) * (self.canvas.scale / PREV_SCALE))
 

@@ -9,14 +9,6 @@ from Canvas.Classes.zoomPan import ZoomPan
 from Canvas.Classes.draw import Draw
 from Canvas.Classes.undoRedo import UndoRedo
 
-def ex_time(func):
-    def wrapper(*args, **kwargs) -> None:
-        s = time.time()
-        func(*args, **kwargs)
-        e = time.time()
-        print(e-s)
-    return wrapper
-
 if TYPE_CHECKING: 
     from Classes.pasteBox import PasteBox
     from main import Main
@@ -25,42 +17,33 @@ class Canvas:
     def __init__(self, main: "Main") -> None:
         self.main = main
 
-        self.color: pygame.Color = pygame.Color((255, 0, 0, 255))
-        self.bg_color = "#ffffff"
-        self.pixel_size: int = 5
-        self.canvas_width: int = 50
-        self.canvas_height: int = 50
-        self.toolbar_height = self.main.toolbar_height
-
-        self.draw = Draw(self)
-        self.zoom_pan = ZoomPan(self)
-        self.select = Select(self)
+        self.draw = Draw(self, main)
+        self.zoom_pan = ZoomPan(self, main)
+        self.select = Select(self, main)
         self.undo_redo = UndoRedo(self)
 
-        self.base_layer = pygame.Surface((self.main.window.get_width(), self.main.window.get_height() - self.toolbar_height))
+        self.base_layer = pygame.Surface((self.main.window.get_width(), self.main.window.get_height() - self.main.toolbar_height))
         self.top_layer = pygame.Surface(self.base_layer.get_size(), flags=pygame.SRCALPHA)
         self.top_layer.fill((0, 0, 0, 0))
 
-        self.scale = floor((self.base_layer.get_height() / self.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.canvas_height) * 0.95) > 1 else 1
+        self.scale = floor((self.base_layer.get_height() / self.main.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.main.canvas_height) * 0.95) > 1 else 1
         self.baseline_scale = self.scale
 
-        self.offset_x = (self.base_layer.get_width() / 2) - ((self.canvas_width * self.scale) / 2)
-        self.offset_y = (self.base_layer.get_height() / 2) - ((self.canvas_height * self.scale) / 2)
+        self.offset_x = (self.base_layer.get_width() / 2) - ((self.main.canvas_width * self.scale) / 2)
+        self.offset_y = (self.base_layer.get_height() / 2) - ((self.main.canvas_height * self.scale) / 2)
 
-        self.select_coords = {}
-        self.copied_area: "pygame.Surface | None" = None
         self.paste_box: "PasteBox | None" = None
 
-        self.canvas_surface = pygame.Surface((self.canvas_width, self.canvas_height))
-        self.canvas_surface.fill("white")
+        self.canvas_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height))
+        self.canvas_surface.fill(self.main.bg_color)
 
-        self.temp_surface = pygame.Surface((self.canvas_width, self.canvas_height), flags=pygame.SRCALPHA)
+        self.temp_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height), flags=pygame.SRCALPHA)
         self.temp_surface.fill((0, 0, 0, 0))
 
         self.render_canvas()
 
     def canvas_collision(self):
-        canvas_rect = self.base_layer.get_rect(topleft = (0, self.toolbar_height))
+        canvas_rect = self.base_layer.get_rect(topleft = (0, self.main.toolbar_height))
         return canvas_rect.collidepoint(pygame.mouse.get_pos())
 
     def event_poll(self, events):
@@ -80,20 +63,20 @@ class Canvas:
 
     def mouse_down(self, event):
         if event.button == 1:
+            if self.main.interaction_state == "draw":
+                self.draw.draw()
+            elif self.main.interaction_state == "delete":
+                self.draw.delete()
+            elif self.main.interaction_state == "select":
                 if self.paste_box and self.paste_box.collision() == "node":
                     self.paste_box.begin_scale()
                 elif self.paste_box and self.paste_box.collision() == "copied_area":
                     self.paste_box.begin_move()
                 else:
-                    if self.main.interaction_state == "draw":
-                        self.draw.draw()
-                    elif self.main.interaction_state == "delete":
-                        self.draw.delete()
-                    elif self.main.interaction_state == "select":
-                        self.select.begin_select()
-
                     if self.paste_box:
                         self.paste_box.commit_paste()
+
+                    self.select.begin_select()
         elif event.button == 2:
             self.zoom_pan.begin_pan()
         elif event.button == 3:
@@ -101,18 +84,16 @@ class Canvas:
 
     def mouse_motion(self, event):
         if event.buttons == (1, 0, 0):
-            if self.paste_box and self.paste_box.is_scaling:
-                self.paste_box.scale()
-            elif self.paste_box and self.paste_box.is_moving:
-                self.paste_box.move()
-            else:
-                if self.main.interaction_state == "draw":
-                    self.draw.cursor()
-                    self.draw.draw()
-                elif self.main.interaction_state == "delete":
-                    self.draw.cursor()
-                    self.draw.delete()
-                elif self.main.interaction_state == "select":
+            if self.main.interaction_state == "draw":
+                self.draw.draw()
+            elif self.main.interaction_state == "delete":
+                self.draw.delete()
+            elif self.main.interaction_state == "select":
+                if self.paste_box and self.paste_box.is_scaling:
+                    self.paste_box.scale()
+                elif self.paste_box and self.paste_box.is_moving:
+                    self.paste_box.move()
+                else:
                     self.select.select()
         elif event.buttons == (0, 1, 0):
             self.zoom_pan.pan()
@@ -143,11 +124,10 @@ class Canvas:
             if self.paste_box:
                 self.paste_box.commit_paste()
         elif event.key == pygame.K_BACKSPACE:
+            self.select.delete()
+
             if self.paste_box:
                 self.paste_box.clear_paste_box()
-
-            if self.select_coords:
-                self.select.delete()
 
     def set_canvas_size(self, x: int, y: int):
         self.canvas_width = x
@@ -159,13 +139,13 @@ class Canvas:
 
         self.canvas_surface = new_canvas
 
-        self.scale = floor((self.base_layer.get_height() / self.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.canvas_height) * 0.95) > 1 else 1
+        self.scale = floor((self.base_layer.get_height() / self.main.canvas_height) * 0.95) if floor((self.base_layer.get_height() / self.main.canvas_height) * 0.95) > 1 else 1
         self.baseline_scale = self.scale
 
-        self.offset_x = (self.base_layer.get_width() / 2) - ((self.canvas_width * self.scale) / 2)
-        self.offset_y = (self.base_layer.get_height() / 2) - ((self.canvas_height * self.scale) / 2)
+        self.offset_x = (self.base_layer.get_width() / 2) - ((self.main.canvas_width * self.scale) / 2)
+        self.offset_y = (self.base_layer.get_height() / 2) - ((self.main.canvas_height * self.scale) / 2)
 
-        self.temp_surface = pygame.Surface((self.canvas_width, self.canvas_height), flags=pygame.SRCALPHA)
+        self.temp_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height), flags=pygame.SRCALPHA)
         self.temp_surface.fill((0, 0, 0, 0))
 
         self.render_canvas()
@@ -177,14 +157,14 @@ class Canvas:
         x = self.offset_x if self.offset_x > 0 else pixel_offset_x
         y = self.offset_y if self.offset_y > 0 else pixel_offset_y
 
-        canvas_width = floor(self.canvas_width * self.scale)
-        canvas_height = floor(self.canvas_height * self.scale)
+        scaled_canvas_width = floor(self.main.canvas_width * self.scale)
+        scaled_canvas_height = floor(self.main.canvas_height * self.scale)
 
         #calculate cropping region of the original image
         crop_left = 0
         crop_top = 0
-        crop_right = self.canvas_width
-        crop_bottom = self.canvas_height
+        crop_right = self.main.canvas_width
+        crop_bottom = self.main.canvas_height
 
         if self.offset_x < 0:
             crop_left = floor((self.offset_x * -1) / self.scale)
@@ -192,24 +172,24 @@ class Canvas:
         if self.offset_y < 0:
             crop_top = floor((self.offset_y * -1) / self.scale)
 
-        if canvas_width + self.offset_x > self.base_layer.get_width():
-            crop_right = floor((canvas_width - ((canvas_width + self.offset_x) - self.base_layer.get_width())) / self.scale)
+        if scaled_canvas_width + self.offset_x > self.base_layer.get_width():
+            crop_right = floor((scaled_canvas_width - ((scaled_canvas_width + self.offset_x) - self.base_layer.get_width())) / self.scale)
 
-        if canvas_height + self.offset_y > self.base_layer.get_height():
-            crop_bottom = floor((canvas_height - ((canvas_height + self.offset_y) - self.base_layer.get_height())) / self.scale)
+        if scaled_canvas_height + self.offset_y > self.base_layer.get_height():
+            crop_bottom = floor((scaled_canvas_height - ((scaled_canvas_height + self.offset_y) - self.base_layer.get_height())) / self.scale)
 
         #calculate width of the cropped image (so the right/bottom side of the canvas doesn't get cut off when panning)
         width = (crop_right - crop_left) + 1
         height = (crop_bottom - crop_top) + 1
 
-        if (crop_right - crop_left == self.canvas_width and canvas_width + self.offset_x < self.base_layer.get_width()) or canvas_width + self.offset_x < self.base_layer.get_width():
+        if (crop_right - crop_left == self.main.canvas_width and scaled_canvas_width + self.offset_x < self.base_layer.get_width()) or scaled_canvas_width + self.offset_x < self.base_layer.get_width():
             width = crop_right - crop_left
 
-        if (crop_bottom - crop_top == self.canvas_height and canvas_height + self.offset_y < self.base_layer.get_height()) or canvas_height + self.offset_y < self.base_layer.get_height():
+        if (crop_bottom - crop_top == self.main.canvas_height and scaled_canvas_height + self.offset_y < self.base_layer.get_height()) or scaled_canvas_height + self.offset_y < self.base_layer.get_height():
             height = crop_bottom - crop_top
 
         #crop, scale and render to screen
-        combined_surface = pygame.Surface((self.canvas_width, self.canvas_height))
+        combined_surface = pygame.Surface((self.main.canvas_width, self.main.canvas_height))
         combined_surface.blit(self.canvas_surface, (0, 0))
         combined_surface.blit(self.temp_surface, (0, 0))
 
@@ -220,7 +200,7 @@ class Canvas:
         if self.paste_box:
             self.paste_box.update()
 
-        self.base_layer.fill("green")
+        self.base_layer.fill((89, 89, 89))
         self.base_layer.blit(scaled_surface, (x, y))
         self.base_layer.blit(self.top_layer, (0, 0))
-        self.main.window.blit(self.base_layer, (0, self.toolbar_height))
+        self.main.window.blit(self.base_layer, (0, self.main.toolbar_height))
