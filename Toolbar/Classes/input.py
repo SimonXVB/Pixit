@@ -39,7 +39,6 @@ class Input:
 
         self.input.blit(font, (self.width * 0.02, center[1]))
         self.toolbar.toolbar_surface.blit(self.input, (self.pos_x, self.pos_y))
-        self.toolbar.update()
 
     def collision(self):
         input_rect = self.input.get_rect(topleft = (self.pos_x, self.pos_y))
@@ -57,17 +56,20 @@ class Input:
         if event.unicode.isnumeric() and len(self.value) < 4:
             self.value += event.unicode
             self.update()
+            self.toolbar.update()
 
     def remove_input(self):
         if not self.is_focused or len(self.value) < 0: return
 
         self.value = self.value[:-1]
         self.update()
+        self.toolbar.update()
 
     def set_value(self, value: int):
         if self.value.isnumeric():
             self.value = str(value)
             self.update()
+            self.toolbar.update()
 
     def get_value(self) -> int:
         return int(self.value)

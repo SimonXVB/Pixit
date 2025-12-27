@@ -44,6 +44,21 @@ class Toolbar:
     def update(self):
         self.main.window.blit(self.toolbar_surface, (0, 0))
 
+    def resize(self, event):
+        self.toolbar_surface: pygame.Surface = pygame.Surface((event.w, 100))
+        self.toolbar_surface.fill("blue")
+
+        for element in self.buttons.values():
+            element.update()
+
+        self.size_slider.update()
+        self.color_picker.update()
+
+        self.x_input.update()
+        self.y_input.update()
+
+        self.update()
+
     def toolbar_collision(self):
         toolbar_rect = self.toolbar_surface.get_rect(topleft = (0, 0))
         return toolbar_rect.collidepoint(pygame.mouse.get_pos())

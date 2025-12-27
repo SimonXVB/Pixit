@@ -10,7 +10,7 @@ class Main:
         pygame.display.set_caption("Pixit")
 
         #init
-        self.window = pygame.display.set_mode((1820, 980), vsync=1)
+        self.window = pygame.display.set_mode((1820, 980), vsync=1, flags=pygame.RESIZABLE)
 
         self.color: pygame.Color = pygame.Color((255, 0, 0, 255))
         self.bg_color = pygame.Color((255, 255, 255))
@@ -27,6 +27,10 @@ class Main:
 
         #start the event loop
         self.event_loop()
+
+    def resize(self, event):
+        self.toolbar.resize(event)
+        self.canvas.resize(event)
 
     def set_interaction_state(self, state: str):
         if self.interaction_state == state: return
@@ -58,11 +62,11 @@ class Main:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
+                elif event.type == pygame.VIDEORESIZE:
+                    self.resize(event)
 
             self.toolbar.event_poll(events)
             self.canvas.event_poll(events)
-
-            #print(self.clock.get_fps())
 
             pygame.display.update()
             self.clock.tick(120)

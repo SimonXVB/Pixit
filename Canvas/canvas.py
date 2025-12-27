@@ -150,6 +150,13 @@ class Canvas:
 
         self.render_canvas()
 
+    def resize(self, event):
+        self.base_layer = pygame.Surface((event.w, event.h - self.main.toolbar_height))
+        self.top_layer = pygame.Surface(self.base_layer.get_size(), flags=pygame.SRCALPHA)
+        self.top_layer.fill((0, 0, 0, 0))
+
+        self.render_canvas()
+
     def render_canvas(self):
         pixel_offset_x = ((((self.offset_x * -1) / self.scale) - floor((self.offset_x * -1) / self.scale)) * self.scale) * -1
         pixel_offset_y = ((((self.offset_y * -1) / self.scale) - floor((self.offset_y * -1) / self.scale)) * self.scale) * -1
