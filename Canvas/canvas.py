@@ -129,9 +129,12 @@ class Canvas:
             if self.paste_box:
                 self.paste_box.clear_paste_box()
 
-    def set_canvas_size(self, x: int, y: int):
-        self.canvas_width = x
-        self.canvas_height = y
+    def set_canvas_size(self, new_x: int, new_y: int):
+        x = new_x if new_x > 1 else self.main.canvas_width
+        y = new_y if new_y > 1 else self.main.canvas_height
+
+        self.main.canvas_width = x
+        self.main.canvas_height = y
 
         new_canvas = pygame.Surface((x, y))
         new_canvas.fill("white")
@@ -150,8 +153,8 @@ class Canvas:
 
         self.render_canvas()
 
-    def resize(self, event):
-        self.base_layer = pygame.Surface((event.w, event.h - self.main.toolbar_height))
+    def resize(self, size):
+        self.base_layer = pygame.Surface((size[0], size[1] - self.main.toolbar_height))
         self.top_layer = pygame.Surface(self.base_layer.get_size(), flags=pygame.SRCALPHA)
         self.top_layer.fill((0, 0, 0, 0))
 

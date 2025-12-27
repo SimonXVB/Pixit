@@ -18,14 +18,14 @@ class ColorPicker:
         self.value: float = 0
         self.color: "pygame.Color" = self.toolbar.main.color
         self.is_moving: bool = False
+        self.is_hovering: bool = False
 
-        self.color_picker = pygame.Surface((self.width, self.height))
-
-        self.gradient_container = pygame.Surface((self.width * 0.95, self.height * 0.7))
-        self.thumb_width = self.gradient_container.get_width() * 0.05
+        self.color_picker = pygame.Surface((self.width, self.height), flags=pygame.SRCALPHA)
+        self.gradient_container = pygame.Surface((self.width, self.height * 0.7), flags=pygame.SRCALPHA)
+        self.thumb_width = self.gradient_container.get_width() * 0.04
 
         self.gradient_width = int(self.gradient_container.get_width() - self.thumb_width)
-        self.gradient_height = int(self.height * 0.4)
+        self.gradient_height = int(self.height * 0.3)
 
         self.gradient = pygame.Surface((self.gradient_width, self.gradient_height))
 
@@ -37,15 +37,28 @@ class ColorPicker:
         self.update()
 
     def event_poll(self, event):
+        if self.track_collision(): 
+            if not self.is_hovering:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                self.is_hovering = True
+        else: 
+            if self.is_hovering and not self.is_moving:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                self.is_hovering = False
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.begin_move()
         elif event.type == pygame.MOUSEMOTION:
             self.set_value()
         elif event.type == pygame.MOUSEBUTTONUP:
+            if self.is_hovering and self.is_moving and not self.track_collision():
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                self.is_hovering = False
             self.end_move()
 
     def update(self):
-        self.gradient_container.fill("black")
+        self.color_picker.fill(self.toolbar.main.colors["secondary"])
+        self.gradient_container.fill((0, 0, 0, 0))
 
         lower_limit = ((self.gradient_container.get_width() * 0.05) / 2) / self.gradient_container.get_width()
         upper_limit = 1 - (((self.gradient_container.get_width() * 0.05) / 2) / self.gradient_container.get_width())
@@ -55,8 +68,9 @@ class ColorPicker:
         if position >= upper_limit: position = upper_limit
         if position <= lower_limit: position = lower_limit
 
-        thumb = pygame.Surface((self.gradient_container.get_width() * 0.05, self.gradient_container.get_height()))
+        thumb = pygame.Surface((self.thumb_width, self.gradient_container.get_height()))
         thumb_position = thumb.get_rect(center=(self.gradient_container.get_width() * position, self.gradient_container.get_height() / 2))
+
         thumb.fill(self.color)
 
         gradient_center = self.gradient.get_rect(center=(self.gradient_container.get_width() / 2, self.gradient_container.get_height() / 2))

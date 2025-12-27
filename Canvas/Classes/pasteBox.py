@@ -40,26 +40,26 @@ class PasteBox:
         self.canvas_copied_area = pygame.transform.scale(self.scaled_copied_area, (self.scaled_copied_area.get_width() * self.canvas.scale, 
                                                                                    self.scaled_copied_area.get_height() * self.canvas.scale))
         self.canvas.top_layer.blit(self.canvas_copied_area, (canvas_x, canvas_y))
-        pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x, canvas_y, self.canvas_copied_area.get_width(), self.canvas_copied_area.get_height()), 1)
+        pygame.draw.rect(self.canvas.top_layer, self.canvas.main.colors["auxiliary"], (canvas_x, canvas_y, self.canvas_copied_area.get_width(), self.canvas_copied_area.get_height()), 1)
 
         offset = (self.canvas.scale / 3) / 2
         
-        self.top_left_node = pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x - offset, 
+        self.top_left_node = pygame.draw.rect(self.canvas.top_layer, self.canvas.main.colors["auxiliary"], (canvas_x - offset, 
                                                                              canvas_y - offset, 
                                                                              self.canvas.scale / 2, 
                                                                              self.canvas.scale / 2))
         
-        self.bottom_left_node = pygame.draw.rect(self.canvas.top_layer, "red", (canvas_x - offset, 
+        self.bottom_left_node = pygame.draw.rect(self.canvas.top_layer, self.canvas.main.colors["auxiliary"], (canvas_x - offset, 
                                                                                 (canvas_y + self.canvas_copied_area.get_height()) - offset, 
                                                                                 self.canvas.scale / 2, 
                                                                                 self.canvas.scale / 2))
         
-        self.top_right_node = pygame.draw.rect(self.canvas.top_layer, "red", ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
+        self.top_right_node = pygame.draw.rect(self.canvas.top_layer, self.canvas.main.colors["auxiliary"], ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
                                                                               canvas_y - offset, 
                                                                               self.canvas.scale / 2, 
                                                                               self.canvas.scale / 2))
         
-        self.bottom_right_node = pygame.draw.rect(self.canvas.top_layer, "red", ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
+        self.bottom_right_node = pygame.draw.rect(self.canvas.top_layer, self.canvas.main.colors["auxiliary"], ((canvas_x + self.canvas_copied_area.get_width()) - offset, 
                                                                                  (canvas_y + self.canvas_copied_area.get_height()) - offset, 
                                                                                  self.canvas.scale / 2, 
                                                                                  self.canvas.scale / 2))

@@ -20,6 +20,13 @@ class Main:
         self.toolbar_height = 100
         self.interaction_state = "draw"
 
+        self.colors = {
+            "primary": pygame.Color((115, 115, 115, 255)),
+            "secondary": pygame.Color((66, 66, 66, 255)),
+            "auxiliary": pygame.Color((145, 145, 145, 255)),
+            "border": pygame.Color((33, 33, 33, 255))
+        }
+
         self.canvas = Canvas(main=self)
         self.toolbar = Toolbar(main=self, canvas=self.canvas)
 
@@ -29,8 +36,17 @@ class Main:
         self.event_loop()
 
     def resize(self, event):
-        self.toolbar.resize(event)
-        self.canvas.resize(event)
+        width, height = event.size
+
+        if width < 750:
+            width = 750
+
+        if height < 650:
+            height = 650
+
+        self.window = pygame.display.set_mode((width, height), vsync=1, flags=pygame.RESIZABLE)
+        self.toolbar.resize((width, height))
+        self.canvas.resize((width, height))
 
     def set_interaction_state(self, state: str):
         if self.interaction_state == state: return
@@ -48,6 +64,8 @@ class Main:
 
         if new_size > max: new_size = max
         if new_size < min: new_size = min
+
+        self.toolbar.size_slider.set_label_text(str(new_size))
 
         self.pixel_size = new_size
 

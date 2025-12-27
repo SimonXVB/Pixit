@@ -15,7 +15,8 @@ class Toolbar:
         self.canvas = canvas
         
         self.toolbar_surface: pygame.Surface = pygame.Surface((self.main.window.get_width(), 100))
-        self.toolbar_surface.fill("blue")
+        self.toolbar_surface.fill(self.main.colors["secondary"])
+        pygame.draw.line(self.toolbar_surface, self.main.colors["border"], (0, self.toolbar_surface.get_height()), (self.toolbar_surface.get_width(), self.toolbar_surface.get_height()), 5)
 
         self.buttons = {
             "Save": Button(self, 35, 35, 10, 10, "SV", lambda: print("Save")),
@@ -27,14 +28,14 @@ class Toolbar:
             "Redo": Button(self, 35, 35, 195, 55, "RD", lambda: self.canvas.undo_redo.redo()),
             "Copy": Button(self, 35, 35, 240, 10, "C", lambda: self.canvas.select.copy()),
             "Paste": Button(self, 35, 35, 240, 55, "P", lambda: self.canvas.select.paste()),
-            "Apply": Button(self, 35, 80, 695, 10, "A", lambda: self.canvas.set_canvas_size(self.x_input.get_value(), self.y_input.get_value())),
+            "Apply": Button(self, 35, 80, 745, 10, "A", lambda: self.canvas.set_canvas_size(self.x_input.get_value(), self.y_input.get_value())),
         }
 
-        self.size_slider = Slider(self, 250, 35, 305, 10, lambda: self.main.set_brush_size(self.size_slider.get_value()))
+        self.size_slider = Slider(self, 250, 35, 305, 10, str(self.main.pixel_size), lambda: self.main.set_brush_size(self.size_slider.get_value()))
         self.color_picker = ColorPicker(self, 250, 35, 305, 55, lambda: self.main.set_color(self.color_picker.get_color()))
 
-        self.x_input = Input(self, 100, 35, 585, 10, lambda: print("X Input"))
-        self.y_input = Input(self, 100, 35, 585, 55, lambda: print("Y Input"))
+        self.x_input = Input(self, 150, 35, 585, 10, "X")
+        self.y_input = Input(self, 150, 35, 585, 55, "Y")
 
         self.x_input.set_value(self.main.canvas_width)
         self.y_input.set_value(self.main.canvas_height)
@@ -44,9 +45,10 @@ class Toolbar:
     def update(self):
         self.main.window.blit(self.toolbar_surface, (0, 0))
 
-    def resize(self, event):
-        self.toolbar_surface: pygame.Surface = pygame.Surface((event.w, 100))
-        self.toolbar_surface.fill("blue")
+    def resize(self, size):
+        self.toolbar_surface: pygame.Surface = pygame.Surface((self.main.window.get_width(), 100))
+        self.toolbar_surface.fill(self.main.colors["secondary"])
+        pygame.draw.line(self.toolbar_surface, self.main.colors["border"], (0, self.toolbar_surface.get_height()), (self.toolbar_surface.get_width(), self.toolbar_surface.get_height()), 5)
 
         for element in self.buttons.values():
             element.update()
@@ -64,8 +66,6 @@ class Toolbar:
         return toolbar_rect.collidepoint(pygame.mouse.get_pos())
 
     def event_poll(self, events):
-        if not self.toolbar_collision(): return
-
         for event in events:
             for element in self.buttons.values():
                 element.event_poll(event)
