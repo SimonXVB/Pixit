@@ -1,5 +1,4 @@
 import pygame
-import time
 
 from typing import TYPE_CHECKING
 from math import floor

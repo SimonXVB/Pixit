@@ -1,4 +1,3 @@
-from math import ceil
 import pygame
 from sys import exit
 from Canvas.canvas import Canvas
@@ -10,7 +9,7 @@ import os
 
 class Main:
     def __init__(self) -> None:
-        pygame.init()
+        _ = pygame.init()
         pygame.display.set_caption("Pixit")
 
         #init
@@ -110,7 +109,6 @@ class Main:
 
             for i in os.listdir(path):
                 if i == "pixit.png":
-                    print("Return")
                     return
                 else:
                     self.saved_path = path
